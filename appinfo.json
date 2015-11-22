@@ -1,0 +1,23 @@
+{
+  "uuid": "f89b3cc9-1262-47c2-9099-041982ae72cf",
+  "shortName": "myPTV",
+  "longName": "myPTV",
+  "companyName": "Marwan Zogheib",
+  "versionLabel": "0.1",
+  "sdkVersion": "3",
+  "targetPlatforms": ["aplite", "basalt"],
+  "watchapp": {
+    "watchface": true
+  },
+  "appKeys": {
+		"KEY_MSG_TYPE": 0,
+		"GET_PT_DATA": 1,
+		"KEY_ROUTE": 10,
+		"KEY_TIME1": 11,
+		"KEY_TIME2": 12,
+		"KEY_TIME3": 13
+  },
+  "resources": {
+    "media": []
+  }
+}

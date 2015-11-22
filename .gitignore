@@ -1,0 +1,13 @@
+
+# Ignore build generated files
+build
+
+# Ignore API key and the combined file (which includes this key)
+src/js/keyInfo.js
+src/js/pebble-js-app-.js
+
+# Ignore waf lock file
+.lock-waf*
+
+# Ignore any assets used for marketing, app store etc
+assets
