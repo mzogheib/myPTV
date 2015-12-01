@@ -27,6 +27,7 @@ var sndComplete = false;
 
 // Send a dictionary of data to the Pebble
 function sendDict() {
+	console.log(dictionary);
 	// Send
   Pebble.sendAppMessage(dictionary,
     function(e) { console.log("Message sent to Pebble successfully!"); },
@@ -50,12 +51,11 @@ function sendPTVData() {
 	dictionary = {
 		"KEY_HEALTH": healthCheckStatus,
 		"KEY_ROUTE1": routeName1,
-		"KEY_STOP1": stopName1,
+		"KEY_STOP": stopName1,
 		"KEY_ROUTE1_TIME1": route1Time1.getTime()/1000,
 		"KEY_ROUTE1_TIME2": route1Time2.getTime()/1000,
 		"KEY_ROUTE1_TIME3": route1Time3.getTime()/1000,
 		"KEY_ROUTE2": routeName2,
-		"KEY_STOP2": stopName2,
 		"KEY_ROUTE2_TIME1": route2Time1.getTime()/1000,
 		"KEY_ROUTE2_TIME2": route2Time2.getTime()/1000,
 		"KEY_ROUTE2_TIME3": route2Time3.getTime()/1000
@@ -200,5 +200,6 @@ Pebble.addEventListener('ready', function (e) {
 
 Pebble.addEventListener('appmessage', function (e) {
   console.log('Message received from Pebble!');
+	// Get the user selected PTV data
 	getPTVData();
 });
