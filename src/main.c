@@ -52,12 +52,17 @@
 #define KEY_ROUTE2_TIME2 18
 #define KEY_ROUTE2_TIME3 19
 
+#define GET_USER_OPT 2
+#define KEY_MODE_ID 20
+#define KEY_ROUTE_ID 21
+#define KEY_DIRECTION_ID 22
+#define KEY_STOP_ID 23
+
 #define GET_HEALTH 8
 #define KEY_HEALTH 80
 
 #define ERR_LOC 90
 #define ERR_URL 91
-
 
 static Window *window;
 static Layer *background_layer;
@@ -65,12 +70,13 @@ static Layer *background_layer;
 static GColor color_bg_time, color_bg_pt_stop, color_bg_pt_departures;
 static GColor color_font_time, color_font_pt_stop, color_font_pt_departures;
 
-
+// Display
 static TextLayer *text_layer_time;
 static TextLayer *text_layer_pt_stop;
 static TextLayer *text_layer_pt_route1, *text_layer_pt_route2;
 static TextLayer *text_layer_pt_time1, *text_layer_pt_time2;
 static TextLayer *text_layer_pt_health;
+
 // Variables for storing the PT data
 static char string_stop[40];
 static char string_route1[40], string_route2[40];
@@ -79,9 +85,17 @@ static char string_time[] = "00:00", string_route1_times[] = "00:00, 00:00, 00:0
 static uint32_t epoch_route1_time1, epoch_route1_time2, epoch_route1_time3, epoch_route2_time1, epoch_route2_time2, epoch_route2_time3;
 static int health_status;
 
+// Variables for storing config data
+static char string_mode_id[2];
+static char string_route_id[10];
+static char string_direction_id[2];
+static char string_stop_id[10];
+static int new_config_received;
+
 /* Funciton Prototypes */
 static void display_pt_times();
 static void write_time(struct tm tick_time, char *buffer);
+static void sendDict(int msg_type);
 
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
   text_layer_set_text(text_layer_time, "Select");
@@ -113,62 +127,99 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   while(t != NULL) {
     // Which key was received?
     switch(t->key) {
-    case KEY_ROUTE1:
-			strcpy(string_route1, t->value->cstring);
-			APP_LOG(APP_LOG_LEVEL_INFO, "Received: %s", string_route1);
-      break;
-    case KEY_ROUTE2:
-			strcpy(string_route2, t->value->cstring);
-			APP_LOG(APP_LOG_LEVEL_INFO, "Received: %s", string_route2);
-      break;
-    case KEY_STOP:
-			strcpy(string_stop, t->value->cstring);
-			APP_LOG(APP_LOG_LEVEL_INFO, "Received: %s", string_stop);
-      break;
-    case KEY_ROUTE1_TIME1:
-			epoch_route1_time1 = t->value->int32;
-			APP_LOG(APP_LOG_LEVEL_INFO, "Received: %d", (int)epoch_route1_time1);
-      break;
-    case KEY_ROUTE1_TIME2:
-			epoch_route1_time2 = t->value->int32;
-			APP_LOG(APP_LOG_LEVEL_INFO, "Received: %d", (int)epoch_route1_time2);
-      break;
-    case KEY_ROUTE1_TIME3:
-			epoch_route1_time3 = t->value->int32;
-			APP_LOG(APP_LOG_LEVEL_INFO, "Received: %d", (int)epoch_route1_time3);
-      break;
-    case KEY_ROUTE2_TIME1:
-			epoch_route2_time1 = t->value->int32;
-			APP_LOG(APP_LOG_LEVEL_INFO, "Received: %d", (int)epoch_route2_time1);
-      break;
-    case KEY_ROUTE2_TIME2:
-			epoch_route2_time2 = t->value->int32;
-			APP_LOG(APP_LOG_LEVEL_INFO, "Received: %d", (int)epoch_route2_time2);
-      break;
-    case KEY_ROUTE2_TIME3:
-			epoch_route2_time3 = t->value->int32;
-			APP_LOG(APP_LOG_LEVEL_INFO, "Received: %d", (int)epoch_route2_time3);
-      break;
-		case KEY_HEALTH:
-			health_status = t->value->int32;
-			APP_LOG(APP_LOG_LEVEL_INFO, "Received Health: %d", (int)health_status);
-			break;
-	  case KEY_MSG_TYPE:
-			switch(t->value->uint8) {
-				case ERR_LOC:
-	      APP_LOG(APP_LOG_LEVEL_ERROR, "Location timeout.");
-				case ERR_URL:
-	      APP_LOG(APP_LOG_LEVEL_ERROR, "URL timeout");	
-			}
-	    break;
-    default:
-      APP_LOG(APP_LOG_LEVEL_ERROR, "Key %d not recognized!", (int)t->key);
-      break;
+			// Received from the PTV API			
+	    case KEY_ROUTE1:
+				strcpy(string_route1, t->value->cstring);
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received: %s", string_route1);
+	      break;
+	    case KEY_ROUTE2:
+				strcpy(string_route2, t->value->cstring);
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received: %s", string_route2);
+	      break;
+	    case KEY_STOP:
+				strcpy(string_stop, t->value->cstring);
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received: %s", string_stop);
+	      break;
+	    case KEY_ROUTE1_TIME1:
+				epoch_route1_time1 = t->value->int32;
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received: %d", (int)epoch_route1_time1);
+	      break;
+	    case KEY_ROUTE1_TIME2:
+				epoch_route1_time2 = t->value->int32;
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received: %d", (int)epoch_route1_time2);
+	      break;
+	    case KEY_ROUTE1_TIME3:
+				epoch_route1_time3 = t->value->int32;
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received: %d", (int)epoch_route1_time3);
+	      break;
+	    case KEY_ROUTE2_TIME1:
+				epoch_route2_time1 = t->value->int32;
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received: %d", (int)epoch_route2_time1);
+	      break;
+	    case KEY_ROUTE2_TIME2:
+				epoch_route2_time2 = t->value->int32;
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received: %d", (int)epoch_route2_time2);
+	      break;
+	    case KEY_ROUTE2_TIME3:
+				epoch_route2_time3 = t->value->int32;
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received: %d", (int)epoch_route2_time3);
+	      break;
+			// Received from the app config page 
+	    case KEY_MODE_ID:
+				strcpy(string_mode_id, t->value->cstring);
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received: %s", string_mode_id);
+				persist_write_string(KEY_MODE_ID, string_mode_id);
+				new_config_received = 1;
+	      break;
+		  case KEY_ROUTE_ID:
+				strcpy(string_route_id, t->value->cstring);
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received: %s", string_route_id);
+				persist_write_string(KEY_ROUTE_ID, string_route_id);
+				new_config_received = 1;
+		    break;
+	    case KEY_DIRECTION_ID:
+				strcpy(string_direction_id, t->value->cstring);
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received: %s", string_direction_id);
+				persist_write_string(KEY_DIRECTION_ID, string_direction_id);
+				new_config_received = 1;
+	      break;
+	    case KEY_STOP_ID:
+				strcpy(string_stop_id, t->value->cstring);
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received: %s", string_stop_id);
+				persist_write_string(KEY_STOP_ID, string_stop_id);
+				new_config_received = 1;
+	      break;		
+			case KEY_HEALTH:
+				health_status = t->value->int32;
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received Health: %d", (int)health_status);
+				break;
+			// Error handling
+		  case KEY_MSG_TYPE:
+				switch(t->value->uint8) {
+					case ERR_LOC:
+		      APP_LOG(APP_LOG_LEVEL_ERROR, "Location timeout.");
+					case ERR_URL:
+		      APP_LOG(APP_LOG_LEVEL_ERROR, "URL timeout");	
+				}
+		    break;
+	    default:
+	      APP_LOG(APP_LOG_LEVEL_ERROR, "Key %d not recognized!", (int)t->key);
+	      break;
     }
 
     // Look for next item
     t = dict_read_next(iterator);
   }	
+	
+	// Try to differentiate between receiving config data and PT data
+	if(new_config_received) {
+    APP_LOG(APP_LOG_LEVEL_INFO, "New config options received and sending to phone!");
+		
+		// Request new times based on new config data
+		sendDict(GET_PT_DATA);	
+		new_config_received = 0;
+	}
+	
 	if(health_status==0) {
 		// Display some unavailable message
 		text_layer_set_text(text_layer_pt_health, "Departures unavailable.");
@@ -241,9 +292,12 @@ static void sendDict(int msg_type) {
 	// Begin dictionary
   DictionaryIterator *iter;
   app_message_outbox_begin(&iter);
-
-  // Add a key-value pair
-  dict_write_uint8(iter, KEY_MSG_TYPE, msg_type);
+	
+  // Add a key-value pair for each parameter
+  dict_write_cstring(iter, KEY_MODE_ID, string_mode_id);
+  dict_write_cstring(iter, KEY_ROUTE_ID, string_route_id);
+  dict_write_cstring(iter, KEY_DIRECTION_ID, string_direction_id);
+  dict_write_cstring(iter, KEY_STOP_ID, string_stop_id);
   
   // Send the message!
   app_message_outbox_send();
@@ -273,17 +327,8 @@ static void handle_tick(struct tm *tick_time, TimeUnits units){
   // Write the current time and date
 	write_time(*tick_time, string_time);
   text_layer_set_text(text_layer_time, string_time);
-  
-	// Begin dictionary
-  DictionaryIterator *iter;
-  app_message_outbox_begin(&iter);
-
-  // Add a key-value pair
-  dict_write_uint8(iter, KEY_MSG_TYPE, GET_PT_DATA);
-  
-  // Send the message!
-  app_message_outbox_send();
-	
+  // Request new PT times
+	sendDict(GET_PT_DATA);	
 }
 
 // Convenience function to create a text layer
@@ -413,6 +458,12 @@ static void init(void) {
   const bool animated = true;
   window_stack_push(window, animated);
 	
+	// If any previously saved config data then recall and save
+  persist_read_string(KEY_MODE_ID, string_mode_id, 2);
+  persist_read_string(KEY_ROUTE_ID, string_route_id, 10);
+  persist_read_string(KEY_DIRECTION_ID, string_direction_id, 2);
+  persist_read_string(KEY_STOP_ID, string_stop_id, 10);
+	
   // Time for display on start up
   time_t temp_time = time(NULL); 
   struct tm *tick_time = localtime(&temp_time);
@@ -421,6 +472,9 @@ static void init(void) {
   text_layer_set_text(text_layer_time, string_time);
   // Subcribe to ticker 
   tick_timer_service_subscribe(MINUTE_UNIT, handle_tick);	
+	
+	// Set the config received flag to false initially
+	new_config_received = 0;
 	
   // Register callbacks
   app_message_register_inbox_received(inbox_received_callback);

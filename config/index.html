@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <title>myPTV Configuration</title>
+  <link rel='stylesheet' type='text/css' href='css/slate.min.css'>
+  <script src='js/slate.min.js'></script>
+  <style>
+  .title {
+    padding: 15px 10px;
+    text-transform: uppercase;
+    font-family: 'PT Sans', sans-serif;
+    font-size: 1.2em;
+    font-weight: 500;
+    color: #888888;
+    text-align: center;
+  }
+
+  </style>
+  </head>
+
+  <body>
+    <h1 class='title'>Configuration</h1>
+
+		 <div class="item-container">
+		   <div class="item-container-header">Pick your favourite</div>
+		   <div class="item-container-content">
+		     <label class="item" id="mode-id">
+		       Mode
+		       <select name="select-mode-id" id="select-mode-id" dir='rtl' class="item-select">
+		         <option class="item-select-option" value="2">Train</option>
+		         <option class="item-select-option" value="3" selected>Tram</option>
+		         <option class="item-select-option" value="4">Bus</option>
+		         <option class="item-select-option" value="8">Night Rider</option>
+		       </select>
+		     </label>
+		     <label class="item" id="route-id">
+		       Route
+		       <select name="select-route-id" id="select-route-id" dir='rtl' class="item-select">
+		         <option class="item-select-option">Alamein</option>
+		         <option class="item-select-option" value="3-86-mjp-1" selected>86</option>
+		         <option class="item-select-option">305</option>
+		       </select>
+		     </label>
+		     <label class="item" id="direction-id">
+		       Direction
+		       <select name="select-direction-id" id="select-direction-id" dir='rtl' class="item-select">
+		         <option class="item-select-option" value="1" selected>Inbound</option>
+		         <option class="item-select-option" value="0">Outbound</option>
+		       </select>
+		     </label>
+		     <label class="item" id="stop-id">
+		       Stop
+		       <select name="select-stop-id" id="select-stop-id" dir='rtl' class="item-select">
+		         <option class="item-select-option" value="6049" selected>Smith St/Queens Pde</option>
+		       </select>
+		     </label>
+		   </div>
+		 </div>
+
+   
+      <div class='item-container-footer'>
+        Get Hektik 4 Lyf
+      </div>
+   
+    <div class='item-container'>
+      <div class='button-container'>
+        <input id='submit_button' type='button' class='item-button' value='SUBMIT'>
+      </div>
+    </div>
+  </body>
+  <script>
+	
+		
+  function getConfigData() {
+		// These IDs correspond to those in the HTML tags
+    var mode_id = document.getElementById('select-mode-id');
+    var route_id = document.getElementById('select-route-id');
+    var direction_id = document.getElementById('select-direction-id');
+    var stop_id = document.getElementById('select-stop-id');
+		  
+ 	 	// Construct the dictionary to pass back to the watch
+    var options = {
+      'mode_id': mode_id.options[mode_id.selectedIndex].value,
+			'route_id': route_id.options[route_id.selectedIndex].value,
+      'direction_id': direction_id.options[direction_id.selectedIndex].value,
+			'stop_id': stop_id.options[stop_id.selectedIndex].value
+    };
+
+    // Save for next launch
+    localStorage['mode_id'] = options['mode_id'];
+    localStorage['route_id'] = options['route_id'];
+    localStorage['direction_id'] = options['direction_id'];
+    localStorage['stop_id'] = options['stop_id'];
+
+    console.log('Got options: ' + JSON.stringify(options));
+    return options;
+  }
+
+  function getQueryParam(variable, defaultValue) {
+    var query = location.search.substring(1);
+    var vars = query.split('&');
+    for (var i = 0; i < vars.length; i++) {
+      var pair = vars[i].split('=');
+      if (pair[0] === variable) {
+        return decodeURIComponent(pair[1]);
+      }
+    }
+    return defaultValue || false;
+  }
+ 
+ 	// Send the config values after the submit button is pressed
+  var submitButton = document.getElementById('submit_button');
+  submitButton.addEventListener('click', function() {
+    console.log('Submit');
+    // Set the return URL depending on the runtime environment
+    var return_to = getQueryParam('return_to', 'pebblejs://close#');
+    document.location = return_to + encodeURIComponent(JSON.stringify(getConfigData()));
+  });
+
+	// Run this on open to make sure the existing config is displayed
+  (function() {
+    var mode_id = document.getElementById('select-mode-id');
+    var route_id = document.getElementById('select-route-id');
+    var direction_id = document.getElementById('select-direction-id');
+    var stop_id = document.getElementById('select-stop-id');
+
+
+    // Load any previously saved configuration, if available
+    if(localStorage['mode_id']) {
+      mode_id.value = JSON.parse(localStorage['mode_id']);
+      route_id.value = JSON.parse(localStorage['route_id']);
+		  direction_id.value = JSON.parse(localStorage['direction_id']);
+			stop_id.value = JSON.parse(localStorage['stop_id']);
+		}
+  })();
+  </script>
+</html>
