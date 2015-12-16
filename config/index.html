@@ -36,9 +36,9 @@
 		     <label class="item" id="route-id">
 		       Route
 		       <select name="select-route-id" id="select-route-id" dir='rtl' class="item-select">
-		         <option class="item-select-option">Alamein</option>
+		         <option class="item-select-option" value="Ala">Alamein</option>
 		         <option class="item-select-option" value="3-86-mjp-1" selected>86</option>
-		         <option class="item-select-option">305</option>
+		         <option class="item-select-option" value="305">305</option>
 		       </select>
 		     </label>
 		     <label class="item" id="direction-id">
@@ -87,10 +87,7 @@
     };
 
     // Save for next launch
-    localStorage['mode_id'] = options['mode_id'];
-    localStorage['route_id'] = options['route_id'];
-    localStorage['direction_id'] = options['direction_id'];
-    localStorage['stop_id'] = options['stop_id'];
+		localStorage.setItem('options', JSON.stringify(options));
 
     console.log('Got options: ' + JSON.stringify(options));
     return options;
@@ -124,14 +121,17 @@
     var direction_id = document.getElementById('select-direction-id');
     var stop_id = document.getElementById('select-stop-id');
 
-
     // Load any previously saved configuration, if available
-    if(localStorage['mode_id']) {
-      mode_id.value = JSON.parse(localStorage['mode_id']);
-      route_id.value = JSON.parse(localStorage['route_id']);
-		  direction_id.value = JSON.parse(localStorage['direction_id']);
-			stop_id.value = JSON.parse(localStorage['stop_id']);
+    if(localStorage.length >= 0) {
+			var options = JSON.parse(localStorage.getItem('options'));
+			console.log('options: ', options);	
+			mode_id.value = options['mode_id'];
+			route_id.value = options['route_id'];
+			direction_id.value = options['direction_id'];
+			stop_id.value = options['stop_id'];
+			
 		}
+		
   })();
   </script>
 </html>
