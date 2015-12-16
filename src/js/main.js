@@ -3,15 +3,16 @@ var baseURL = 'http://timetableapi.ptv.vic.gov.au';
 var apiVersion = '/v2';
 
 // PT to look up
-var modeID1 = 1;
-var lineID1 = 1881;
-var stopID1 = 2075;
-var directionID1 = 27;
+var modeID1;
+var lineID1;
+var stopID1;
+var directionID1;
 var limit1 = 3;
-var modeID2 = 1;
-var lineID2 = 3343;
-var stopID2 = 2966;
-var directionID2 = 9;
+
+var modeID2 = 3;
+var lineID2 = "3-86-mjp-1";
+var stopID2 = 6049;
+var directionID2 = 0;
 var limit2 = 3;
 
 var dictionary;
@@ -50,12 +51,11 @@ function sendPTVData() {
 	dictionary = {
 		"KEY_HEALTH": healthCheckStatus,
 		"KEY_ROUTE1": routeName1,
-		"KEY_STOP1": stopName1,
+		"KEY_STOP": stopName1,
 		"KEY_ROUTE1_TIME1": route1Time1.getTime()/1000,
 		"KEY_ROUTE1_TIME2": route1Time2.getTime()/1000,
 		"KEY_ROUTE1_TIME3": route1Time3.getTime()/1000,
 		"KEY_ROUTE2": routeName2,
-		"KEY_STOP2": stopName2,
 		"KEY_ROUTE2_TIME1": route2Time1.getTime()/1000,
 		"KEY_ROUTE2_TIME2": route2Time2.getTime()/1000,
 		"KEY_ROUTE2_TIME3": route2Time3.getTime()/1000
@@ -149,8 +149,8 @@ function specificNextDeparturesCallback(data) {
 	sndComplete = true;
 }
 
-function specificNextDepartures(mode, line, stop, directionid, limit) {
-	var params = '/mode/' + mode + '/line/' + line + '/stop/' + stop + '/directionid/' + directionid + '/departures/all/limit/' + limit + '?';
+function specificNextDeparturesGTFS(mode, line, stop, directionid, limit) {
+	var params = '/mode/' + mode + '/route_id/' + line + '/stop/' + stop + '/direction/' + directionid + '/departures/all/limit/' + limit + '?';
 	var finalURL = getURLWithSignature(baseURL, params, devID, key);
 	console.log(finalURL);
 	callPTVAPI(finalURL, specificNextDeparturesCallback);
@@ -168,7 +168,7 @@ function getPTVData() {
 		
 	if(healthCheckStatus) {
 		// Get all data for the first 
-		specificNextDepartures(modeID1, lineID1, stopID1, directionID1, limit1);
+		specificNextDeparturesGTFS(modeID1, lineID1, stopID1, directionID1, limit1);
 		routeName1 = routeNameTemp;
 		stopName1 = stopNameTemp;
 		route1Time1 = routeTempTime1;
@@ -176,7 +176,13 @@ function getPTVData() {
 		route1Time3 = routeTempTime3;
 		
 		// Get all data for the second
-		specificNextDepartures(modeID2, lineID2, stopID2, directionID2, limit2);
+		routeNameTemp = "";
+		stopNameTemp = "";
+		routeTempTime1 = "";
+		routeTempTime2 = "";
+		routeTempTime3 = "";
+		
+		specificNextDeparturesGTFS(modeID2, lineID2, stopID2, directionID2, limit2);
 		routeName2 = routeNameTemp;
 		stopName2 = stopNameTemp;
 		route2Time1 = routeTempTime1;
@@ -192,13 +198,53 @@ function getPTVData() {
 	}
 }
 
+// Event listeners
 Pebble.addEventListener('ready', function (e) {
   console.log('JS connected!');
 	getPTVData();
 		
 });
 
+// Message from the watch to get the PT data from the API
 Pebble.addEventListener('appmessage', function (e) {
   console.log('Message received from Pebble!');
+	// Get the user selected PTV data
+	var configData = JSON.stringify(e.payload);
+	console.log("Config data sent from watch: " + configData);
+	modeID1 = e.payload['KEY_MODE_ID'];
+	lineID1 = e.payload['KEY_ROUTE_ID'];
+	directionID1 = e.payload['KEY_DIRECTION_ID'];
+	stopID1 = e.payload['KEY_STOP_ID'];
+	console.log(lineID1);
+	
 	getPTVData();
+});
+
+// User has launched the config page
+Pebble.addEventListener('showConfiguration', function() {
+  //var url = 'http://0.0.0.0:8080/'
+	var url = 'http://gethektik.com/Pebble/myPTV/';
+  console.log('Showing configuration page: ' + url);
+
+  Pebble.openURL(url);
+});
+
+// User has submitted the config. Send it to the watch.
+Pebble.addEventListener('webviewclosed', function(e) {
+  var configData = JSON.parse(decodeURIComponent(e.response));
+  console.log('Configuration page returned: ' + JSON.stringify(configData));
+
+	// Create a dict from the configData passed by the user
+  var dict = {};
+  dict['KEY_MODE_ID'] = configData['mode_id'];
+  dict['KEY_ROUTE_ID'] = configData['route_id'];
+  dict['KEY_DIRECTION_ID'] = configData['direction_id'];
+  dict['KEY_STOP_ID'] = configData['stop_id'];
+
+  // Send to watchapp
+  Pebble.sendAppMessage(dict, function() {
+    console.log('Send successful: ' + JSON.stringify(dict));
+  }, function() {
+    console.log('Send failed!');
+  });
 });

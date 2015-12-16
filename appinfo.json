@@ -3,38 +3,45 @@
   "shortName": "myPTV",
   "longName": "myPTV",
   "companyName": "Marwan Zogheib",
-  "versionLabel": "0.2",
+  "versionLabel": "0.3",
   "sdkVersion": "3",
   "targetPlatforms": ["aplite", "basalt"],
   "watchapp": {
     "watchface": true
   },
+  "capabilities": [
+     "configurable"
+  ],
   "appKeys": {
 		"KEY_MSG_TYPE": 0,
 		"GET_PT_DATA": 1,
 		"KEY_ROUTE1": 10,
 		"KEY_ROUTE2": 11,
-		"KEY_STOP1": 12,
-		"KEY_STOP2": 13,
+		"KEY_STOP": 12,
 		"KEY_ROUTE1_TIME1": 14,
 		"KEY_ROUTE1_TIME2": 15,
 		"KEY_ROUTE1_TIME3": 16,
 		"KEY_ROUTE2_TIME1": 17,
 		"KEY_ROUTE2_TIME2": 18,
 		"KEY_ROUTE2_TIME3": 19,
+		"GET_USER_OPT": 2,
+		"KEY_MODE_ID": 20,
+		"KEY_ROUTE_ID": 21,
+		"KEY_DIRECTION_ID": 22,
+		"KEY_STOP_ID": 23,
 		"KEY_HEALTH":	80
   },
   "resources": {
     "media": [
 		  {
 		    "type": "font",
-		    "name": "CUSTOM_FONT_26",
-		    "file": "Lato-Regular.ttf"
+		    "name": "CUSTOM_FONT_28",
+		    "file": "Montserrat-Black.otf"
 		  },
 		  {
 		    "type": "font",
 		    "name": "CUSTOM_FONT_20",
-		    "file": "Lato-Regular.ttf"
+		    "file": "Montserrat-Light.otf"
 		  }
     ]
   }
