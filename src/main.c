@@ -236,23 +236,43 @@ static void display_pt_times() {
 	// Display the stop names
 	text_layer_set_text(text_layer_pt_stop, string_stop);
 	
-	// Make the time structs and displays the next 3 for each route/stop
-  time_t temp_time = epoch_route_time1; 
-  struct tm *tick_time = localtime(&temp_time);
-	write_time(*tick_time, string_route_time1);
-	temp_time = epoch_route_time2;	
-	tick_time = localtime(&temp_time);
-	write_time(*tick_time, string_route_time2);
-	temp_time = epoch_route_time3;	
-	tick_time = localtime(&temp_time);
-	write_time(*tick_time, string_route_time3);
+	// Get the current time
+	time_t temp_time = time(NULL); 
+	
+	// Calc the number of mins until each departure. It will truncate down but that's more conservative so ok.
+	int time_diff1 = (epoch_route_time1 - temp_time)/60;
+	int time_diff2 = (epoch_route_time2 - temp_time)/60;
+	int time_diff3 = (epoch_route_time3 - temp_time)/60;
+  APP_LOG(APP_LOG_LEVEL_INFO, "Mins until departure1: %d", time_diff1);
+  APP_LOG(APP_LOG_LEVEL_INFO, "Mins until departure2: %d", time_diff2);
+  APP_LOG(APP_LOG_LEVEL_INFO, "Mins until departure3: %d", time_diff3);
+	
+	if(time_diff1==0) {
+		strcpy(string_route_time1, "NOW");
+	} else {
+		snprintf(string_route_time1, sizeof(string_route_time1), "%d", time_diff1);
+		strcat(string_route_time1, "mins");
+	}
+	if(time_diff2==0) {
+		strcpy(string_route_time2, "NOW");
+	} else {
+		snprintf(string_route_time2, sizeof(string_route_time2), "%d", time_diff2);
+		strcat(string_route_time2, "mins");
+	}	
+	if(time_diff3==0) {
+		strcpy(string_route_time3, "NOW");
+	} else {
+		snprintf(string_route_time3, sizeof(string_route_time3), "%d", time_diff3);
+		strcat(string_route_time3, "mins");
+	}
+	
 	strcpy(string_route_times, string_route_time1);
 	strcat(string_route_times, ", ");
 	strcat(string_route_times, string_route_time2);	
 	strcat(string_route_times, ", ");
 	strcat(string_route_times, string_route_time3);	
   text_layer_set_text(text_layer_pt_time, string_route_times);
-  
+	
  
 }
 
