@@ -9,7 +9,7 @@ var stopID;
 var directionID;
 var limit = 3;
 
-var dictionary;
+var dictionary = {};
 var healthCheckStatus = true;
 var routeName, routeNameTemp;
 var stopName, stopNameTemp;
@@ -25,39 +25,31 @@ function sendDict() {
 	// Send
   Pebble.sendAppMessage(dictionary,
     function(e) { console.log("Message sent to Pebble successfully!"); },
-    function(e) { console.log("Error sending weather info to Pebble!"); }
+    function(e) { console.log("Error sending message to Pebble!"); }
   );	
+	dictionary = {};
 }
 
 // Sends a dictionary with only a bad health check result
-function sendBadHealthCheck() {
+function addBadHealthCheckToDict() {
 	console.log("Sending bad health check to Pebble");
 	// Assemble dictionary
 	dictionary = {
 		"KEY_HEALTH": healthCheckStatus
 	};
-	sendDict();
 }
 
 // Send a dictionary of data to the Pebble
-function sendPTVData() {
+function addPTVDataToDict() {
 	// Assemble dictionary
-	dictionary = {
-		"KEY_HEALTH": healthCheckStatus,
-		"KEY_ROUTE": routeName,
-		"KEY_STOP": stopName,
-		"KEY_ROUTE_TIME1": routeTime1,
-		"KEY_ROUTE_TIME2": routeTime2,
-		"KEY_ROUTE_TIME3": routeTime3
-	};
-	sendDict();
+	dictionary["KEY_HEALTH"] = healthCheckStatus;
+	dictionary["KEY_ROUTE"] = routeName;
+	dictionary["KEY_STOP"] = stopName;
+	dictionary["KEY_ROUTE_TIME1"] = routeTime1;
+	dictionary["KEY_ROUTE_TIME2"] = routeTime2;
+	dictionary["KEY_ROUTE_TIME3"] = routeTime3;
 	// Reset all variables
-	healthCheckStatus = "";
-	routeName = "";
-	stopName = "";
-	routeTime1 = "";
-	routeTime2 = "";
-	routeTime3 = "";
+
 	
 } 
 
@@ -76,6 +68,9 @@ function callPTVAPI(finalURL, callback) {
   xhr.onreadystatechange = function () {
     if (xhr.readyState == 4 && xhr.status == 200) {
       callback(xhr.responseText);
+    } else {
+			// Handle this better
+    	console.log("Bad URL for the PTV API");
     }
   }
   xhr.send();
@@ -116,7 +111,6 @@ function specificNextDeparturesCallback(data) {
 	var sndJSON = JSON.parse(data);
 	
 	// Use objects and loops for this.
-	
 	routeName = sndJSON.values[0]["platform"]["direction"]["line"]["line_name"].substring(0,3) + sndJSON.values[0]["platform"]["direction"]["direction_name"];
 	stopName = sndJSON.values[0]["platform"]["stop"]["location_name"];
 	// Strip off the stop number if tram
@@ -169,30 +163,16 @@ function getPTVData() {
 		
 	if(healthCheckStatus) {
 		// Get all data  
-		specificNextDeparturesGTFS(modeID, lineID, stopID, directionID, limit);			
-		// Send dict
-		sendPTVData();
-		console.log("API data sent");
+		specificNextDeparturesGTFS(modeID, lineID, stopID, directionID, limit);
+		addPTVDataToDict();			
 	} else {
-		sendBadHealthCheck();
-		console.log("No API data yet");
+		addBadHealthCheckToDict();
 	}
-}
-
-// Sends a dictionary with only a bad health check result
-function sendRequestFor() {
-	console.log("Sending bad health check to Pebble");
-	// Assemble dictionary
-	dictionary = {
-		"KEY_HEALTH": healthCheckStatus
-	};
-	sendDict();
 }
 
 // Event listeners
 Pebble.addEventListener('ready', function (e) {
-  console.log('JS connected!');	
-		
+  console.log('JS connected!');			
 });
 
 // Message from the watch to get the PT data from the API
@@ -206,6 +186,9 @@ Pebble.addEventListener('appmessage', function (e) {
 	stopID = e.payload['KEY_STOP_ID'];
 	
 	getPTVData();
+	
+  // Send to watchapp
+  sendDict();
 });
 
 // User has launched the config page
@@ -222,17 +205,19 @@ Pebble.addEventListener('webviewclosed', function(e) {
   var configData = JSON.parse(decodeURIComponent(e.response));
   console.log('Configuration page returned: ' + JSON.stringify(configData));
 
-	// Create a dict from the configData passed by the user
-  var dict = {};
-  dict['KEY_MODE_ID'] = configData['mode_id'];
-  dict['KEY_ROUTE_ID'] = configData['route_id'];
-  dict['KEY_DIRECTION_ID'] = configData['direction_id'];
-  dict['KEY_STOP_ID'] = configData['stop_id'];
+	// Save the config ids for the API call
+	modeID = configData['mode_id'];
+	lineID = configData['route_id'];
+	directionID = configData['direction_id'];
+	stopID = configData['stop_id'];
+	// Send the final dictionary comprising of config IDs and PT data
+  dictionary['KEY_MODE_ID'] = configData['mode_id'];
+  dictionary['KEY_ROUTE_ID'] = configData['route_id'];
+  dictionary['KEY_DIRECTION_ID'] = configData['direction_id'];
+  dictionary['KEY_STOP_ID'] = configData['stop_id'];
+	getPTVData();
+	addPTVDataToDict();
 
   // Send to watchapp
-  Pebble.sendAppMessage(dict, function() {
-    console.log('Config sent successfully: ' + JSON.stringify(dict));
-  }, function() {
-    console.log('Config not sent!');
-  });
+  sendDict();
 });

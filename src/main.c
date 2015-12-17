@@ -119,51 +119,51 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
 			// Received from the PTV API			
 	    case KEY_ROUTE:
 				strcpy(string_route, t->value->cstring);
-				APP_LOG(APP_LOG_LEVEL_INFO, "Received: %s", string_route);
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received route name: %s", string_route);
 				new_departures_received = 1;
 	      break;
 	    case KEY_STOP:
 				strcpy(string_stop, t->value->cstring);
-				APP_LOG(APP_LOG_LEVEL_INFO, "Received: %s", string_stop);
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received stop name: %s", string_stop);
 				new_departures_received = 1;
 	      break;
 	    case KEY_ROUTE_TIME1:
 				epoch_route_time1 = t->value->int32;
-				APP_LOG(APP_LOG_LEVEL_INFO, "Received: %d", (int)epoch_route_time1);
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received time1: %d", (int)epoch_route_time1);
 				new_departures_received = 1;
 	      break;
 	    case KEY_ROUTE_TIME2:
 				epoch_route_time2 = t->value->int32;
-				APP_LOG(APP_LOG_LEVEL_INFO, "Received: %d", (int)epoch_route_time2);
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received time2: %d", (int)epoch_route_time2);
 				new_departures_received = 1;
 	      break;
 	    case KEY_ROUTE_TIME3:
 				epoch_route_time3 = t->value->int32;
-				APP_LOG(APP_LOG_LEVEL_INFO, "Received: %d", (int)epoch_route_time3);
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received time3: %d", (int)epoch_route_time3);
 				new_departures_received = 1;
 	      break;
 			// Received from the app config page 
 	    case KEY_MODE_ID:
 				strcpy(string_mode_id, t->value->cstring);
-				APP_LOG(APP_LOG_LEVEL_INFO, "Received: %s", string_mode_id);
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received modeID: %s", string_mode_id);
 				persist_write_string(KEY_MODE_ID, string_mode_id);
 				new_config_received = 1;
 	      break;
 		  case KEY_ROUTE_ID:
 				strcpy(string_route_id, t->value->cstring);
-				APP_LOG(APP_LOG_LEVEL_INFO, "Received: %s", string_route_id);
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received routeID: %s", string_route_id);
 				persist_write_string(KEY_ROUTE_ID, string_route_id);
 				new_config_received = 1;
 		    break;
 	    case KEY_DIRECTION_ID:
 				strcpy(string_direction_id, t->value->cstring);
-				APP_LOG(APP_LOG_LEVEL_INFO, "Received: %s", string_direction_id);
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received directionID: %s", string_direction_id);
 				persist_write_string(KEY_DIRECTION_ID, string_direction_id);
 				new_config_received = 1;
 	      break;
 	    case KEY_STOP_ID:
 				strcpy(string_stop_id, t->value->cstring);
-				APP_LOG(APP_LOG_LEVEL_INFO, "Received: %s", string_stop_id);
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received stopID: %s", string_stop_id);
 				persist_write_string(KEY_STOP_ID, string_stop_id);
 				new_config_received = 1;
 	      break;		
@@ -195,7 +195,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     // Look for next item
     t = dict_read_next(iterator);
   }	
-	
+	/*
 	if(new_config_received) {
     APP_LOG(APP_LOG_LEVEL_INFO, "New config options received and sending to phone!");
 		// Request new times based on new config data
@@ -203,7 +203,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
 		sendDict(GET_PT_DATA);	
 		new_config_received = 0;
 	}
-	
+	*/
 	if(new_departures_received) {
     APP_LOG(APP_LOG_LEVEL_INFO, "New departures received and displaying on watch!");
 		display_pt_times();
