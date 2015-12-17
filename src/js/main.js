@@ -3,24 +3,18 @@ var baseURL = 'http://timetableapi.ptv.vic.gov.au';
 var apiVersion = '/v2';
 
 // PT to look up
-var modeID1;
-var lineID1;
-var stopID1;
-var directionID1;
-var limit1 = 3;
-
-var modeID2 = 3;
-var lineID2 = "3-86-mjp-1";
-var stopID2 = 6049;
-var directionID2 = 0;
-var limit2 = 3;
+var modeID;
+var lineID;
+var stopID;
+var directionID;
+var limit = 3;
 
 var dictionary;
-var healthCheckStatus;
-var routeName1, routeName2, routeNameTemp;
-var stopName1, stopName2, stopNameTemp;
+var healthCheckStatus = true;
+var routeName, routeNameTemp;
+var stopName, stopNameTemp;
 var directionName1, directionName2, directionNameTemp;
-var route1Time1, route1Time2, route2Time1, route2Time2, route2Time3, routeTempTime1, routeTempTime2, routeTempTime3;
+var routeTime1, routeTime2, routeTime3, routeTempTime1, routeTempTime2, routeTempTime3;
 
 var healthCheckComplete = false;
 var sndComplete = false;
@@ -50,17 +44,21 @@ function sendPTVData() {
 	// Assemble dictionary
 	dictionary = {
 		"KEY_HEALTH": healthCheckStatus,
-		"KEY_ROUTE1": routeName1,
-		"KEY_STOP": stopName1,
-		"KEY_ROUTE1_TIME1": route1Time1.getTime()/1000,
-		"KEY_ROUTE1_TIME2": route1Time2.getTime()/1000,
-		"KEY_ROUTE1_TIME3": route1Time3.getTime()/1000,
-		"KEY_ROUTE2": routeName2,
-		"KEY_ROUTE2_TIME1": route2Time1.getTime()/1000,
-		"KEY_ROUTE2_TIME2": route2Time2.getTime()/1000,
-		"KEY_ROUTE2_TIME3": route2Time3.getTime()/1000
+		"KEY_ROUTE": routeName,
+		"KEY_STOP": stopName,
+		"KEY_ROUTE_TIME1": routeTime1,
+		"KEY_ROUTE_TIME2": routeTime2,
+		"KEY_ROUTE_TIME3": routeTime3
 	};
 	sendDict();
+	// Reset all variables
+	healthCheckStatus = "";
+	routeName = "";
+	stopName = "";
+	routeTime1 = "";
+	routeTime2 = "";
+	routeTime3 = "";
+	
 } 
 
 // Returns the complete API URL with calculated signature
@@ -119,31 +117,34 @@ function specificNextDeparturesCallback(data) {
 	
 	// Use objects and loops for this.
 	
-	routeNameTemp = sndJSON.values[0]["platform"]["direction"]["line"]["line_name"].substring(0,3) + sndJSON.values[0]["platform"]["direction"]["direction_name"];
-	stopNameTemp = sndJSON.values[0]["platform"]["stop"]["location_name"];
+	routeName = sndJSON.values[0]["platform"]["direction"]["line"]["line_name"].substring(0,3) + sndJSON.values[0]["platform"]["direction"]["direction_name"];
+	stopName = sndJSON.values[0]["platform"]["stop"]["location_name"];
 	// Strip off the stop number if tram
 	if(sndJSON.values[0]["platform"]["stop"]["transport_type"]==="tram") {
-		stopNameTemp = stopNameTemp.substring(0, stopNameTemp.indexOf('#')-1);
+		stopName = stopName.substring(0, stopName.indexOf('#')-1);
 	}
   // Get the realtime departures
-	routeTempTime1 = sndJSON.values[0]["time_realtime_utc"];
-	routeTempTime2 = sndJSON.values[1]["time_realtime_utc"];
-	routeTempTime3 = sndJSON.values[2]["time_realtime_utc"];
+	routeTime1 = sndJSON.values[0]["time_realtime_utc"];
+	routeTime2 = sndJSON.values[1]["time_realtime_utc"];
+	routeTime3 = sndJSON.values[2]["time_realtime_utc"];
 	
 	// If a realtime departure is null then revert to scheduled
-	routeTempTime1 = ((routeTempTime1===null) ? sndJSON.values[0]["time_timetable_utc"] : routeTempTime1);
-	routeTempTime2 = ((routeTempTime2===null) ? sndJSON.values[1]["time_timetable_utc"] : routeTempTime2);
-	routeTempTime3 = ((routeTempTime3===null) ? sndJSON.values[2]["time_timetable_utc"] : routeTempTime3);
+	routeTime1 = ((routeTime1===null) ? sndJSON.values[0]["time_timetable_utc"] : routeTime1);
+	routeTime2 = ((routeTime2===null) ? sndJSON.values[1]["time_timetable_utc"] : routeTime2);
+	routeTime3 = ((routeTime3===null) ? sndJSON.values[2]["time_timetable_utc"] : routeTime3);
 	
 	// Convert to local time
-	routeTempTime1 = new Date(routeTempTime1);
-	routeTempTime2 = new Date(routeTempTime2);
-	routeTempTime3 = new Date(routeTempTime3);
+	routeTime1 = new Date(routeTime1);
+	routeTime2 = new Date(routeTime2);
+	routeTime3 = new Date(routeTime3);
 	
+	console.log(routeTime1);
+	console.log(routeTime2);
+	console.log(routeTime3);
 	
-	console.log(routeTempTime1);
-	console.log(routeTempTime2);
-	console.log(routeTempTime3);
+	routeTime1 = routeTime1.getTime()/1000;
+	routeTime2 = routeTime2.getTime()/1000;
+	routeTime3 = routeTime3.getTime()/1000;
 	
 
 	sndComplete = true;
@@ -167,28 +168,8 @@ function getPTVData() {
 	healthCheck();
 		
 	if(healthCheckStatus) {
-		// Get all data for the first 
-		specificNextDeparturesGTFS(modeID1, lineID1, stopID1, directionID1, limit1);
-		routeName1 = routeNameTemp;
-		stopName1 = stopNameTemp;
-		route1Time1 = routeTempTime1;
-		route1Time2 = routeTempTime2;
-		route1Time3 = routeTempTime3;
-		
-		// Get all data for the second
-		routeNameTemp = "";
-		stopNameTemp = "";
-		routeTempTime1 = "";
-		routeTempTime2 = "";
-		routeTempTime3 = "";
-		
-		specificNextDeparturesGTFS(modeID2, lineID2, stopID2, directionID2, limit2);
-		routeName2 = routeNameTemp;
-		stopName2 = stopNameTemp;
-		route2Time1 = routeTempTime1;
-		route2Time2 = routeTempTime2;
-		route2Time3 = routeTempTime3;
-		
+		// Get all data  
+		specificNextDeparturesGTFS(modeID, lineID, stopID, directionID, limit);			
 		// Send dict
 		sendPTVData();
 		console.log("API data sent");
@@ -198,24 +179,31 @@ function getPTVData() {
 	}
 }
 
+// Sends a dictionary with only a bad health check result
+function sendRequestFor() {
+	console.log("Sending bad health check to Pebble");
+	// Assemble dictionary
+	dictionary = {
+		"KEY_HEALTH": healthCheckStatus
+	};
+	sendDict();
+}
+
 // Event listeners
 Pebble.addEventListener('ready', function (e) {
-  console.log('JS connected!');
-	getPTVData();
+  console.log('JS connected!');	
 		
 });
 
 // Message from the watch to get the PT data from the API
 Pebble.addEventListener('appmessage', function (e) {
-  console.log('Message received from Pebble!');
 	// Get the user selected PTV data
 	var configData = JSON.stringify(e.payload);
 	console.log("Config data sent from watch: " + configData);
-	modeID1 = e.payload['KEY_MODE_ID'];
-	lineID1 = e.payload['KEY_ROUTE_ID'];
-	directionID1 = e.payload['KEY_DIRECTION_ID'];
-	stopID1 = e.payload['KEY_STOP_ID'];
-	console.log(lineID1);
+	modeID = e.payload['KEY_MODE_ID'];
+	lineID = e.payload['KEY_ROUTE_ID'];
+	directionID = e.payload['KEY_DIRECTION_ID'];
+	stopID = e.payload['KEY_STOP_ID'];
 	
 	getPTVData();
 });
@@ -243,8 +231,8 @@ Pebble.addEventListener('webviewclosed', function(e) {
 
   // Send to watchapp
   Pebble.sendAppMessage(dict, function() {
-    console.log('Send successful: ' + JSON.stringify(dict));
+    console.log('Config sent successfully: ' + JSON.stringify(dict));
   }, function() {
-    console.log('Send failed!');
+    console.log('Config not sent!');
   });
 });
