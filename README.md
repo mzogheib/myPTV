@@ -1,3 +1,3 @@
-A watch face that displays the next departures of your favourite route.
+An app that displays the next departures at the nearest stop of your favourite route.
 
 

@@ -32,7 +32,7 @@ function sendDict() {
 
 // Sends a dictionary with only a bad health check result
 function addBadHealthCheckToDict() {
-	console.log("Sending bad health check to Pebble");
+	//console.log("Sending bad health check to Pebble");
 	// Assemble dictionary
 	dictionary = {
 		"KEY_HEALTH": healthCheckStatus
@@ -42,6 +42,7 @@ function addBadHealthCheckToDict() {
 // Send a dictionary of data to the Pebble
 function addPTVDataToDict() {
 	// Assemble dictionary
+	//console.log("Adding PTV data to dict");
 	dictionary["KEY_HEALTH"] = healthCheckStatus;
 	dictionary["KEY_ROUTE"] = routeName;
 	dictionary["KEY_STOP"] = stopName;
@@ -50,7 +51,6 @@ function addPTVDataToDict() {
 	dictionary["KEY_ROUTE_TIME3"] = routeTime3;
 	// Reset all variables
 
-	
 } 
 
 // Returns the complete API URL with calculated signature
@@ -82,7 +82,7 @@ function healthCheck() {
   var params = '/healthcheck?timestamp=' + date.toISOString();
   var finalURL = getURLWithSignature(baseURL, params, devID, key);
 
-	console.log("Doing Health Check");
+	//console.log("Doing Health Check");
   // Call the API and provide a callback to handle the return data
   callPTVAPI(finalURL, healthCheckCallback);
 }
@@ -94,13 +94,14 @@ function healthCheckCallback(data) {
 	
 	// If any of the helth check JSON members are false the health is not ok, i.e. false
   for(var member in healthJSON) {
-		console.log(member + ": " + healthJSON[member]);
   	if(healthJSON[member]===false) {
+			console.log(member + ": " + healthJSON[member]);
+			
   		healthCheckStatus = false;
   	}
   }
 	
-	console.log("Health Check: " + healthCheckStatus);
+	//console.log("Health Check: " + healthCheckStatus);
 	
 	healthCheckComplete = true;
 
@@ -111,12 +112,17 @@ function specificNextDeparturesCallback(data) {
 	var sndJSON = JSON.parse(data);
 	
 	// Use objects and loops for this.
-	routeName = sndJSON.values[0]["platform"]["direction"]["line"]["line_name"].substring(0,3) + sndJSON.values[0]["platform"]["direction"]["direction_name"];
+	routeName = sndJSON.values[0]["platform"]["direction"]["line"]["line_name"].substring(0,3) + " " + sndJSON.values[0]["platform"]["direction"]["direction_name"];
 	stopName = sndJSON.values[0]["platform"]["stop"]["location_name"];
 	// Strip off the stop number if tram
-	if(sndJSON.values[0]["platform"]["stop"]["transport_type"]==="tram") {
+	/*if(sndJSON.values[0]["platform"]["stop"]["transport_type"]==="tram") {
 		stopName = stopName.substring(0, stopName.indexOf('#')-1);
-	}
+	}*/
+	
+	routeName = routeName.substring(0, 10);
+	stopName = stopName.substring(0, 10);
+	
+		
   // Get the realtime departures
 	routeTime1 = sndJSON.values[0]["time_realtime_utc"];
 	routeTime2 = sndJSON.values[1]["time_realtime_utc"];
@@ -132,9 +138,9 @@ function specificNextDeparturesCallback(data) {
 	routeTime2 = new Date(routeTime2);
 	routeTime3 = new Date(routeTime3);
 	
-	console.log(routeTime1);
-	console.log(routeTime2);
-	console.log(routeTime3);
+	//console.log(routeTime1);
+	//console.log(routeTime2);
+	//console.log(routeTime3);
 	
 	routeTime1 = routeTime1.getTime()/1000;
 	routeTime2 = routeTime2.getTime()/1000;
@@ -160,7 +166,7 @@ var locationOptions = {
 function getPTVData() {
 	// Check API health then either call the other APIs or send alert back to Pebble
 	healthCheck();
-		
+	console.log("Getting new PTV data for " + modeID + " " + lineID + " " + directionID + " " + stopID + " ")	
 	if(healthCheckStatus) {
 		// Get all data  
 		specificNextDeparturesGTFS(modeID, lineID, stopID, directionID, limit);
@@ -173,6 +179,8 @@ function getPTVData() {
 // Event listeners
 Pebble.addEventListener('ready', function (e) {
   console.log('JS connected!');			
+
+	
 });
 
 // Message from the watch to get the PT data from the API
@@ -193,8 +201,8 @@ Pebble.addEventListener('appmessage', function (e) {
 
 // User has launched the config page
 Pebble.addEventListener('showConfiguration', function() {
-  //var url = 'http://0.0.0.0:8080/'
-	var url = 'http://gethektik.com/Pebble/myPTV/';
+  //var url = 'http://127.0.0.1:8888/'
+	var url = 'http://www.marwanz.com/ptv_db/';
   console.log('Showing configuration page: ' + url);
 
   Pebble.openURL(url);
@@ -204,7 +212,7 @@ Pebble.addEventListener('showConfiguration', function() {
 Pebble.addEventListener('webviewclosed', function(e) {
   var configData = JSON.parse(decodeURIComponent(e.response));
   console.log('Configuration page returned: ' + JSON.stringify(configData));
-
+	
 	// Save the config ids for the API call
 	modeID = configData['mode_id'];
 	lineID = configData['route_id'];
@@ -216,7 +224,6 @@ Pebble.addEventListener('webviewclosed', function(e) {
   dictionary['KEY_DIRECTION_ID'] = configData['direction_id'];
   dictionary['KEY_STOP_ID'] = configData['stop_id'];
 	getPTVData();
-	addPTVDataToDict();
 
   // Send to watchapp
   sendDict();

@@ -78,7 +78,7 @@ static char string_mode_id[2];
 static char string_route_id[15];
 static char string_direction_id[2];
 static char string_stop_id[10];
-static int new_config_received, new_departures_received;
+static int config_available, new_departures_received;
 
 // Config dictionaries to be passed to the phone
 DictionaryIterator *config1;
@@ -147,25 +147,25 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
 				strcpy(string_mode_id, t->value->cstring);
 				APP_LOG(APP_LOG_LEVEL_INFO, "Received modeID: %s", string_mode_id);
 				persist_write_string(KEY_MODE_ID, string_mode_id);
-				new_config_received = 1;
+				config_available = 1;
 	      break;
 		  case KEY_ROUTE_ID:
 				strcpy(string_route_id, t->value->cstring);
 				APP_LOG(APP_LOG_LEVEL_INFO, "Received routeID: %s", string_route_id);
 				persist_write_string(KEY_ROUTE_ID, string_route_id);
-				new_config_received = 1;
+				config_available = 1;
 		    break;
 	    case KEY_DIRECTION_ID:
 				strcpy(string_direction_id, t->value->cstring);
 				APP_LOG(APP_LOG_LEVEL_INFO, "Received directionID: %s", string_direction_id);
 				persist_write_string(KEY_DIRECTION_ID, string_direction_id);
-				new_config_received = 1;
+				config_available = 1;
 	      break;
 	    case KEY_STOP_ID:
 				strcpy(string_stop_id, t->value->cstring);
 				APP_LOG(APP_LOG_LEVEL_INFO, "Received stopID: %s", string_stop_id);
 				persist_write_string(KEY_STOP_ID, string_stop_id);
-				new_config_received = 1;
+				config_available = 1;
 	      break;		
 			case KEY_HEALTH:
 				health_status = t->value->int32;
@@ -196,12 +196,12 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     t = dict_read_next(iterator);
   }	
 	/*
-	if(new_config_received) {
+	if(config_available) {
     APP_LOG(APP_LOG_LEVEL_INFO, "New config options received and sending to phone!");
 		// Request new times based on new config data
 		// Remove this and handle on the phone while sending the config data. To avoid an extra message.
 		sendDict(GET_PT_DATA);	
-		new_config_received = 0;
+		config_available = 0;
 	}
 	*/
 	if(new_departures_received) {
@@ -243,9 +243,9 @@ static void display_pt_times() {
 	int time_diff1 = (epoch_route_time1 - temp_time)/60;
 	int time_diff2 = (epoch_route_time2 - temp_time)/60;
 	int time_diff3 = (epoch_route_time3 - temp_time)/60;
-  APP_LOG(APP_LOG_LEVEL_INFO, "Mins until departure1: %d", time_diff1);
-  APP_LOG(APP_LOG_LEVEL_INFO, "Mins until departure2: %d", time_diff2);
-  APP_LOG(APP_LOG_LEVEL_INFO, "Mins until departure3: %d", time_diff3);
+  //APP_LOG(APP_LOG_LEVEL_INFO, "Mins until departure1: %d", time_diff1);
+  //APP_LOG(APP_LOG_LEVEL_INFO, "Mins until departure2: %d", time_diff2);
+  //APP_LOG(APP_LOG_LEVEL_INFO, "Mins until departure3: %d", time_diff3);
 	
 	if(time_diff1==0) {
 		strcpy(string_route_time1, "NOW");
@@ -313,7 +313,7 @@ static void write_time(struct tm tick_time, char *buffer) {
 // Run this function at every tick of the clock, i.e. second or minute
 static void handle_tick(struct tm *tick_time, TimeUnits units){  
   // Request new PT times only if favourite data is present
-	if(new_config_received==1) {
+	if(config_available==1) {
 		sendDict(GET_PT_DATA);
 	}
 	
@@ -428,7 +428,7 @@ static void init(void) {
   window_stack_push(window, animated);
 	
 	// Set the config received flag to false initially
-	new_config_received = 0;
+	config_available = 0;
 	new_departures_received = 0;
  
   // Subcribe to ticker 
@@ -453,7 +453,7 @@ static void init(void) {
 	// Check if any existing favourite route data.
 	if(persist_exists(KEY_MODE_ID) && persist_exists(KEY_ROUTE_ID) && persist_exists(KEY_DIRECTION_ID)) {
 		APP_LOG(APP_LOG_LEVEL_INFO, "Persist data exists.");
-		new_config_received = 1;
+		config_available = 1;
 		// If yes, send a dict of route data
 	  persist_read_string(KEY_MODE_ID, string_mode_id, 2);
 	  persist_read_string(KEY_ROUTE_ID, string_route_id, 15);
@@ -463,7 +463,7 @@ static void init(void) {
 		sendDict(GET_PT_DATA);
 		
 	} else {
-		APP_LOG(APP_LOG_LEVEL_ERROR, "Persist data doesn't exist.");
+		APP_LOG(APP_LOG_LEVEL_INFO, "Persist data doesn't exist.");
 		// If no, alert wearer to pick a favourite
 		text_layer_set_text(text_layer_pt_health, "Pick a favourite route.");
 		text_layer_set_text(text_layer_pt_route, "");
