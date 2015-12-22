@@ -25,19 +25,19 @@
 		   <div class="item-container-content">
 		     <label class="item" id="mode-id">
 		       Mode
-		       <select name="select-mode-id" id="select-mode-id" dir='rtl' class="item-select" onchange="loadRoutes(this)">
+		       <select name="select-mode-id" id="select-mode-id" dir='rtl' class="item-select" onchange="loadRoutes(selectedMode.value)">
 						 <!--from DB-->
 		       </select>
 		     </label>
 		     <label class="item" id="route-id">
 		       Route
-		       <select name="select-route-id" id="select-route-id" dir='rtl' class="item-select" onchange="loadDirections(this)">
+		       <select name="select-route-id" id="select-route-id" dir='rtl' class="item-select" onchange="loadDirections(selectedMode.value, selectedRoute.value)">
 						 <!--from DB-->
 		       </select>
 		     </label>
 		     <label class="item" id="direction-id">
 		       Direction
-		       <select name="select-direction-id" id="select-direction-id" dir='rtl' class="item-select" onchange="loadStops(this)">
+		       <select name="select-direction-id" id="select-direction-id" dir='rtl' class="item-select" onchange="loadStops(selectedMode.value, selectedRoute.value, selectedDirection.value)">
 						 <!--from DB-->
 		       </select>
 		     </label>

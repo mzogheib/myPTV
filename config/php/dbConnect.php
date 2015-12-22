@@ -2,6 +2,8 @@
 // Login details
 $username = "ptv_readonly";
 $password = "password";
+$username = "root";
+$password = "root";
 $hostname = 'localhost';
 $dbname = "PTV_GTFS";
 

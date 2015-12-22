@@ -118,10 +118,7 @@ function specificNextDeparturesCallback(data) {
 	/*if(sndJSON.values[0]["platform"]["stop"]["transport_type"]==="tram") {
 		stopName = stopName.substring(0, stopName.indexOf('#')-1);
 	}*/
-	
-	routeName = routeName.substring(0, 10);
-	stopName = stopName.substring(0, 10);
-	
+
 		
   // Get the realtime departures
 	routeTime1 = sndJSON.values[0]["time_realtime_utc"];
@@ -201,8 +198,8 @@ Pebble.addEventListener('appmessage', function (e) {
 
 // User has launched the config page
 Pebble.addEventListener('showConfiguration', function() {
-  //var url = 'http://127.0.0.1:8888/'
-	var url = 'http://www.marwanz.com/ptv_db/';
+  var url = 'http://localhost:8888/'
+	//var url = 'http://www.marwanz.com/ptv_db/';
   console.log('Showing configuration page: ' + url);
 
   Pebble.openURL(url);
