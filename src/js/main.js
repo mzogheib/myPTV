@@ -7,10 +7,10 @@ var localConfig1 = {};
 
 var dictionary = {};
 var healthCheckStatus = true;
-var routeName, routeNameTemp;
-var stopName, stopNameTemp;
-var directionName1, directionName2, directionNameTemp;
-var routeTime1, routeTime2, routeTime3, routeTempTime1, routeTempTime2, routeTempTime3;
+var routeShortName, routeLongName;
+var stopName;
+var directionName1, directionName2;
+var departureTime1, departureTime2, departureTime3;
 
 var healthCheckComplete = false;
 
@@ -88,7 +88,8 @@ function specificNextDeparturesCallback(data) {
 	var sndJSON = JSON.parse(data);
 	
 	// Use objects and loops for this.
-	routeName = sndJSON.values[0]["platform"]["direction"]["line"]["line_name"].substring(0,3) + " " + sndJSON.values[0]["platform"]["direction"]["direction_name"];
+	routeShortName = sndJSON.values[0]["platform"]["direction"]["line"]["line_number"];
+	routeLongName = sndJSON.values[0]["platform"]["direction"]["direction_name"];
 	stopName = sndJSON.values[0]["platform"]["stop"]["location_name"];
 	// Strip off the stop number if tram
 	/*if(sndJSON.values[0]["platform"]["stop"]["transport_type"]==="tram") {
@@ -97,36 +98,40 @@ function specificNextDeparturesCallback(data) {
 
 		
   // Get the realtime departures
-	routeTime1 = sndJSON.values[0]["time_realtime_utc"];
-	routeTime2 = sndJSON.values[1]["time_realtime_utc"];
-	routeTime3 = sndJSON.values[2]["time_realtime_utc"];
+	departureTime1 = sndJSON.values[0]["time_realtime_utc"];
+	departureTime2 = sndJSON.values[1]["time_realtime_utc"];
+	departureTime3 = sndJSON.values[2]["time_realtime_utc"];
 	
 	// If a realtime departure is null then revert to scheduled
-	routeTime1 = ((routeTime1==null) ? sndJSON.values[0]["time_timetable_utc"] : routeTime1);
-	routeTime2 = ((routeTime2==null) ? sndJSON.values[1]["time_timetable_utc"] : routeTime2);
-	routeTime3 = ((routeTime3==null) ? sndJSON.values[2]["time_timetable_utc"] : routeTime3);
+	departureTime1 = ((departureTime1==null) ? sndJSON.values[0]["time_timetable_utc"] : departureTime1);
+	departureTime2 = ((departureTime2==null) ? sndJSON.values[1]["time_timetable_utc"] : departureTime2);
+	departureTime3 = ((departureTime3==null) ? sndJSON.values[2]["time_timetable_utc"] : departureTime3);
 	
 	// Convert to local time
-	routeTime1 = new Date(routeTime1);
-	routeTime2 = new Date(routeTime2);
-	routeTime3 = new Date(routeTime3);
+	departureTime1 = new Date(departureTime1);
+	departureTime2 = new Date(departureTime2);
+	departureTime3 = new Date(departureTime3);
 	
-	//console.log(routeTime1);
-	//console.log(routeTime2);
-	//console.log(routeTime3);
+	//console.log(departureTime1);
+	//console.log(departureTime2);
+	//console.log(departureTime3);
 	
 	// Convert to ms sice epoch
-	routeTime1 = routeTime1.getTime()/1000;
-	routeTime2 = routeTime2.getTime()/1000;
-	routeTime3 = routeTime3.getTime()/1000;
+	departureTime1 = departureTime1.getTime()/1000;
+	departureTime2 = departureTime2.getTime()/1000;
+	departureTime3 = departureTime3.getTime()/1000;
 	
 	// Add to a dictionary for the watch
-	dictionary["KEY_HEALTH"] = healthCheckStatus;
-	dictionary["KEY_ROUTE"] = routeName;
+	dictionary["KEY_ROUTE_SHORT"] = routeShortName;
+	dictionary["KEY_ROUTE_LONG"] = routeLongName;
 	dictionary["KEY_STOP"] = stopName;
-	dictionary["KEY_ROUTE_TIME1"] = routeTime1;
-	dictionary["KEY_ROUTE_TIME2"] = routeTime2;
-	dictionary["KEY_ROUTE_TIME3"] = routeTime3;
+	dictionary["KEY_DEPARTURE_1"] = departureTime1;
+	dictionary["KEY_DEPARTURE_2"] = departureTime2;
+	dictionary["KEY_DEPARTURE_3"] = departureTime3;
+
+	console.log("Sending long route name: " + routeLongName);
+	console.log("Sending long route name in dict: " + dictionary["KEY_ROUTE_LONG"]);
+	
 
 	sendDict();
 }
