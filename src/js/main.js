@@ -91,6 +91,8 @@ function specificNextDeparturesCallback(data) {
 	routeShortName = sndJSON.values[0]["platform"]["direction"]["line"]["line_number"];
 	routeLongName = sndJSON.values[0]["platform"]["direction"]["direction_name"];
 	stopName = sndJSON.values[0]["platform"]["stop"]["location_name"];
+	stopName = stopName.replace("/", " / ");
+	
 	// Strip off the stop number if tram
 	/*if(sndJSON.values[0]["platform"]["stop"]["transport_type"]==="tram") {
 		stopName = stopName.substring(0, stopName.indexOf('#')-1);

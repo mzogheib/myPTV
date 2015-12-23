@@ -19,21 +19,21 @@
 // Text layer Dimensions
 #define ROUTE_SHORT_LAYER_X 0
 #define ROUTE_SHORT_LAYER_Y 0
-#define ROUTE_SHORT_LAYER_HEIGHT 15
+#define ROUTE_SHORT_LAYER_HEIGHT 30
 #define ROUTE_LONG_LAYER_X 0
 #define ROUTE_LONG_LAYER_Y ROUTE_SHORT_LAYER_Y + ROUTE_SHORT_LAYER_HEIGHT
-#define ROUTE_LONG_LAYER_HEIGHT 15
+#define ROUTE_LONG_LAYER_HEIGHT 26
 
 #define STOP_LAYER_X 0
 #define STOP_LAYER_Y ROUTE_LONG_LAYER_Y + ROUTE_LONG_LAYER_HEIGHT
-#define STOP_LAYER_HEIGHT 20
+#define STOP_LAYER_HEIGHT 56
 
 #define DEPARTURE_1_LAYER_X 0
-#define DEPARTURE_1_LAYER_Y STOP_LAYER_Y + STOP_LAYER_HEIGHT - 6
-#define DEPARTURE_1_LAYER_HEIGHT 24
+#define DEPARTURE_1_LAYER_Y STOP_LAYER_Y + STOP_LAYER_HEIGHT - 0
+#define DEPARTURE_1_LAYER_HEIGHT 30
 #define DEPARTURE_2_3_LAYER_X 0
-#define DEPARTURE_2_3_LAYER_Y DEPARTURE_1_LAYER_Y + DEPARTURE_1_LAYER_HEIGHT - 6
-#define DEPARTURE_2_3_LAYER_HEIGHT 24
+#define DEPARTURE_2_3_LAYER_Y DEPARTURE_1_LAYER_Y + DEPARTURE_1_LAYER_HEIGHT - 0
+#define DEPARTURE_2_3_LAYER_HEIGHT 26
 
 #define TEXT_LAYER_PADDING 2
 
@@ -307,10 +307,10 @@ static void init_colors() {
 	#else
 	color_bg_pt_route = GColorWhite;
 	color_bg_pt_stop = GColorBlack;
-	color_bg_pt_departures = GColorBlack;
+	color_bg_pt_departures = GColorWhite;
 	color_font_pt_route = GColorBlack;
 	color_font_pt_stop = GColorWhite;; 
-	color_font_pt_departures = GColorWhite;
+	color_font_pt_departures = GColorBlack;
 	#endif
 }
 
@@ -339,10 +339,10 @@ static void window_load(Window *window) {
 	GFont font_route_short, font_route_long, font_stop, font_departure_1, font_departure_2_3;
 	GRect text_layer_rect;
 	
-	font_route_short = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
+	font_route_short = fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD);
 	font_route_long = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
-	font_stop = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
-	font_departure_1 = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
+	font_stop = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
+	font_departure_1 = fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD);
 	font_departure_2_3 = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
 	
 	
@@ -368,7 +368,7 @@ static void window_load(Window *window) {
 		
 	// Stop Layer
 	text_layer_rect = (GRect) { .origin = { STOP_LAYER_X + TEXT_LAYER_PADDING, STOP_LAYER_Y }, .size = { bounds.size.w, STOP_LAYER_HEIGHT } };
-  text_layer_pt_stop = init_text_layer(text_layer_rect, color_font_pt_stop, GColorClear, font_stop, GTextAlignmentLeft);
+  text_layer_pt_stop = init_text_layer(text_layer_rect, color_font_pt_stop, GColorClear, font_stop, GTextAlignmentCenter);
   text_layer_set_text(text_layer_pt_stop, "Getting stop...");
 	
 	// First departure layer
@@ -377,8 +377,8 @@ static void window_load(Window *window) {
   text_layer_set_text(text_layer_pt_departures_1, "Getting departures...");
 	
 	// Second and third departures layer
-	text_layer_rect = (GRect) { .origin = { DEPARTURE_2_3_LAYER_X + TEXT_LAYER_PADDING, DEPARTURE_2_3_LAYER_Y }, .size = { bounds.size.w, DEPARTURE_2_3_LAYER_HEIGHT } };
-  text_layer_pt_departures_2_3 = init_text_layer(text_layer_rect, color_font_pt_departures, GColorClear, font_departure_2_3, GTextAlignmentLeft);
+	text_layer_rect = (GRect) { .origin = { DEPARTURE_2_3_LAYER_X + TEXT_LAYER_PADDING, DEPARTURE_2_3_LAYER_Y }, .size = { bounds.size.w-TEXT_LAYER_PADDING, DEPARTURE_2_3_LAYER_HEIGHT } };
+  text_layer_pt_departures_2_3 = init_text_layer(text_layer_rect, color_font_pt_departures, GColorClear, font_departure_2_3, GTextAlignmentRight);
   text_layer_set_text(text_layer_pt_departures_2_3, "");
  
   layer_add_child(window_layer, background_layer);
