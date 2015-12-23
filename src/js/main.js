@@ -3,11 +3,7 @@ var baseURL = 'http://timetableapi.ptv.vic.gov.au';
 var apiVersion = '/v2';
 
 // PT to look up
-var modeID;
-var lineID;
-var stopID;
-var directionID;
-var limit = 3;
+var localConfig1 = {};
 
 var dictionary = {};
 var healthCheckStatus = true;
@@ -17,8 +13,6 @@ var directionName1, directionName2, directionNameTemp;
 var routeTime1, routeTime2, routeTime3, routeTempTime1, routeTempTime2, routeTempTime3;
 
 var healthCheckComplete = false;
-var sndComplete = false;
-
 
 // Send a dictionary of data to the Pebble
 function sendDict() {
@@ -29,29 +23,6 @@ function sendDict() {
   );	
 	dictionary = {};
 }
-
-// Sends a dictionary with only a bad health check result
-function addBadHealthCheckToDict() {
-	//console.log("Sending bad health check to Pebble");
-	// Assemble dictionary
-	dictionary = {
-		"KEY_HEALTH": healthCheckStatus
-	};
-}
-
-// Send a dictionary of data to the Pebble
-function addPTVDataToDict() {
-	// Assemble dictionary
-	//console.log("Adding PTV data to dict");
-	dictionary["KEY_HEALTH"] = healthCheckStatus;
-	dictionary["KEY_ROUTE"] = routeName;
-	dictionary["KEY_STOP"] = stopName;
-	dictionary["KEY_ROUTE_TIME1"] = routeTime1;
-	dictionary["KEY_ROUTE_TIME2"] = routeTime2;
-	dictionary["KEY_ROUTE_TIME3"] = routeTime3;
-	// Reset all variables
-
-} 
 
 // Returns the complete API URL with calculated signature
 function getURLWithSignature(baseURL, params, devID, key) {
@@ -64,14 +35,11 @@ function getURLWithSignature(baseURL, params, devID, key) {
 // Calls the API specified in finalURL and uses callback to do something with the data
 function callPTVAPI(finalURL, callback) {
   var xhr = new XMLHttpRequest();
-  xhr.open("GET", finalURL, false);
+  xhr.open("GET", finalURL, true);
   xhr.onreadystatechange = function () {
     if (xhr.readyState == 4 && xhr.status == 200) {
       callback(xhr.responseText);
-    } else {
-			// Handle this better
-    	console.log("Bad URL for the PTV API");
-    }
+    } 
   }
   xhr.send();
 }
@@ -96,15 +64,23 @@ function healthCheckCallback(data) {
   for(var member in healthJSON) {
   	if(healthJSON[member]===false) {
 			console.log(member + ": " + healthJSON[member]);
-			
   		healthCheckStatus = false;
   	}
   }
-	
 	//console.log("Health Check: " + healthCheckStatus);
 	
-	healthCheckComplete = true;
-
+	// Handle the health check status
+	if(healthCheckStatus) {
+		// Carry on with getting PTV data
+		console.log("Getting new PTV data for " + localConfig1['mode_id'] + " " + localConfig1['route_id'] + " " + localConfig1['direction_id'] + " " + localConfig1['stop_id'] + " ")	
+		specificNextDeparturesGTFS(localConfig1['mode_id'], localConfig1['route_id'], localConfig1['stop_id'], localConfig1['direction_id'], localConfig1['limit']);
+	} else {
+		// Return a bad health check result to the watch
+		dictionary = {
+			"KEY_HEALTH": healthCheckStatus
+		};
+		sendDict();
+	}
 }
 
 // Callback to handle the data returned from the Specific Next Departures API
@@ -126,9 +102,9 @@ function specificNextDeparturesCallback(data) {
 	routeTime3 = sndJSON.values[2]["time_realtime_utc"];
 	
 	// If a realtime departure is null then revert to scheduled
-	routeTime1 = ((routeTime1===null) ? sndJSON.values[0]["time_timetable_utc"] : routeTime1);
-	routeTime2 = ((routeTime2===null) ? sndJSON.values[1]["time_timetable_utc"] : routeTime2);
-	routeTime3 = ((routeTime3===null) ? sndJSON.values[2]["time_timetable_utc"] : routeTime3);
+	routeTime1 = ((routeTime1==null) ? sndJSON.values[0]["time_timetable_utc"] : routeTime1);
+	routeTime2 = ((routeTime2==null) ? sndJSON.values[1]["time_timetable_utc"] : routeTime2);
+	routeTime3 = ((routeTime3==null) ? sndJSON.values[2]["time_timetable_utc"] : routeTime3);
 	
 	// Convert to local time
 	routeTime1 = new Date(routeTime1);
@@ -139,21 +115,28 @@ function specificNextDeparturesCallback(data) {
 	//console.log(routeTime2);
 	//console.log(routeTime3);
 	
+	// Convert to ms sice epoch
 	routeTime1 = routeTime1.getTime()/1000;
 	routeTime2 = routeTime2.getTime()/1000;
 	routeTime3 = routeTime3.getTime()/1000;
 	
+	// Add to a dictionary for the watch
+	dictionary["KEY_HEALTH"] = healthCheckStatus;
+	dictionary["KEY_ROUTE"] = routeName;
+	dictionary["KEY_STOP"] = stopName;
+	dictionary["KEY_ROUTE_TIME1"] = routeTime1;
+	dictionary["KEY_ROUTE_TIME2"] = routeTime2;
+	dictionary["KEY_ROUTE_TIME3"] = routeTime3;
 
-	sndComplete = true;
+	sendDict();
 }
 
-function specificNextDeparturesGTFS(mode, line, stop, directionid, limit) {
-	var params = '/mode/' + mode + '/route_id/' + line + '/stop/' + stop + '/direction/' + directionid + '/departures/all/limit/' + limit + '?';
+function specificNextDeparturesGTFS(mode, line, stop, direction, limit) {
+	var params = '/mode/' + mode + '/route_id/' + line + '/stop/' + stop + '/direction/' + direction + '/departures/all/limit/' + limit + '?';
 	var finalURL = getURLWithSignature(baseURL, params, devID, key);
 	console.log(finalURL);
 	callPTVAPI(finalURL, specificNextDeparturesCallback);
 }
-
 
 var locationOptions = {
   'timeout': 15000,
@@ -163,65 +146,61 @@ var locationOptions = {
 function getPTVData() {
 	// Check API health then either call the other APIs or send alert back to Pebble
 	healthCheck();
-	console.log("Getting new PTV data for " + modeID + " " + lineID + " " + directionID + " " + stopID + " ")	
-	if(healthCheckStatus) {
-		// Get all data  
-		specificNextDeparturesGTFS(modeID, lineID, stopID, directionID, limit);
-		addPTVDataToDict();			
-	} else {
-		addBadHealthCheckToDict();
-	}
 }
 
 // Event listeners
 Pebble.addEventListener('ready', function (e) {
-  console.log('JS connected!');			
-
-	
+  console.log('JS connected!');
+ 	if(localStorage.getItem('localConfig1')!=null) {
+		// Call the API for the stored config
+		console.log("Loading local storage: " + localStorage.getItem('localConfig1'));	
+		localConfig1 = JSON.parse(localStorage.getItem('localConfig1'));
+		getPTVData();
+	} else {
+		console.log("No local storage");
+	}
 });
 
 // Message from the watch to get the PT data from the API
 Pebble.addEventListener('appmessage', function (e) {
-	// Get the user selected PTV data
-	var configData = JSON.stringify(e.payload);
-	console.log("Config data sent from watch: " + configData);
-	modeID = e.payload['KEY_MODE_ID'];
-	lineID = e.payload['KEY_ROUTE_ID'];
-	directionID = e.payload['KEY_DIRECTION_ID'];
-	stopID = e.payload['KEY_STOP_ID'];
-	
-	getPTVData();
-	
-  // Send to watchapp
-  sendDict();
+	if(localStorage.getItem('localConfig1')!=null) {
+		// Call the API for the stored config
+		localConfig1 = JSON.parse(localStorage.getItem('localConfig1'));
+		getPTVData();
+	} else {
+		console.log("No local storage");
+	}
+
 });
 
 // User has launched the config page
 Pebble.addEventListener('showConfiguration', function() {
-  var url = 'http://localhost:8888/'
-	//var url = 'http://www.marwanz.com/ptv_db/';
+  //var url = 'http://localhost:8888/'
+	var url = 'http://www.marwanz.com/ptv_db/';
   console.log('Showing configuration page: ' + url);
 
   Pebble.openURL(url);
 });
 
-// User has submitted the config. Send it to the watch.
+// User has submitted the config. Store the config and call the API.
 Pebble.addEventListener('webviewclosed', function(e) {
-  var configData = JSON.parse(decodeURIComponent(e.response));
-  console.log('Configuration page returned: ' + JSON.stringify(configData));
-	
-	// Save the config ids for the API call
-	modeID = configData['mode_id'];
-	lineID = configData['route_id'];
-	directionID = configData['direction_id'];
-	stopID = configData['stop_id'];
-	// Send the final dictionary comprising of config IDs and PT data
-  dictionary['KEY_MODE_ID'] = configData['mode_id'];
-  dictionary['KEY_ROUTE_ID'] = configData['route_id'];
-  dictionary['KEY_DIRECTION_ID'] = configData['direction_id'];
-  dictionary['KEY_STOP_ID'] = configData['stop_id'];
-	getPTVData();
+  if(e.response!='') {	
+		var receivedConfig = JSON.parse(decodeURIComponent(e.response));
+	  console.log('Config returned: ' + JSON.stringify(receivedConfig));
 
-  // Send to watchapp
-  sendDict();
+		// Save the config ids for the API call
+		localConfig1 = {
+			'mode_id': receivedConfig['mode_id'],
+			'route_id': receivedConfig['route_id'],
+			'direction_id': receivedConfig['direction_id'],
+			'stop_id': receivedConfig['stop_id'],
+			'limit': "3"
+		};
+		localStorage.setItem('localConfig1', JSON.stringify(localConfig1));
+	
+		// Get and send the PTV data
+		getPTVData();
+	} else {
+		console.log("Config cancelled");
+	}
 });

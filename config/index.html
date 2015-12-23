@@ -2,7 +2,8 @@
 <html>
   <head>
   <title>myPTV Configuration</title>
-  <link rel='stylesheet' type='text/css' href='css/slate.min.css'>
+  <link rel='stylesheet' type='text/css' href='css/slate.css'>
+	
   <script src='js/slate.min.js'></script>
   <style>
   .title {
@@ -20,30 +21,34 @@
 
   <body>
     <h1 class='title'>Configuration</h1>
-		 <div class="item-container">
+		
+	
+		
+		<div class="item-container">
 		   <div class="item-container-header">Pick your favourite</div>
+	 	
 		   <div class="item-container-content">
 		     <label class="item" id="mode-id">
 		       Mode
-		       <select name="select-mode-id" id="select-mode-id" dir='rtl' class="item-select" onchange="loadRoutes(selectedMode.value)">
+		       <select name="select-mode-id" id="select-mode-id" dir='rtl' class="item-select" onchange="loadRoutes(selectObjMode.value)">
 						 <!--from DB-->
 		       </select>
 		     </label>
 		     <label class="item" id="route-id">
 		       Route
-		       <select name="select-route-id" id="select-route-id" dir='rtl' class="item-select" onchange="loadDirections(selectedMode.value, selectedRoute.value)">
+		       <select name="select-route-id" id="select-route-id" dir='rtl' class="item-select" onchange="loadDirections(selectObjMode.value, selectObjRoute.value)">
 						 <!--from DB-->
 		       </select>
 		     </label>
 		     <label class="item" id="direction-id">
 		       Direction
-		       <select name="select-direction-id" id="select-direction-id" dir='rtl' class="item-select" onchange="loadStops(selectedMode.value, selectedRoute.value, selectedDirection.value)">
+		       <select name="select-direction-id" id="select-direction-id" dir='rtl' class="item-select" onchange="loadStops(selectObjMode.value, selectObjRoute.value, selectObjDirection.value)">
 						 <!--from DB-->
 		       </select>
 		     </label>
 		     <label class="item" id="stop-id">
 		       Stops
-		       <select name="select-stop-id" id="select-stop-id" dir='rtl' class="item-select">
+		       <select name="select-stop-id" id="select-stop-id" dir='rtl' class="item-select" onchange="enableSubmit()">
 						 <!--from DB-->
 		       </select>
 		     </label>
@@ -51,8 +56,8 @@
 		 </div>
    
     <div class='item-container'>
-      <div class='button-container'>
-        <input id='submit_button' type='button' class='item-button' value='SUBMIT'>
+		  <div id='submit-button-container' class='button-container'>
+        <input id='submit-button' type='button' class='item-button' value='SUBMIT'>
       </div>
     </div>
   </body>

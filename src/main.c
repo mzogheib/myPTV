@@ -142,31 +142,6 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
 				APP_LOG(APP_LOG_LEVEL_INFO, "Received time3: %d", (int)epoch_route_time3);
 				new_departures_received = 1;
 	      break;
-			// Received from the app config page 
-	    case KEY_MODE_ID:
-				strcpy(string_mode_id, t->value->cstring);
-				APP_LOG(APP_LOG_LEVEL_INFO, "Received modeID: %s", string_mode_id);
-				persist_write_string(KEY_MODE_ID, string_mode_id);
-				config_available = 1;
-	      break;
-		  case KEY_ROUTE_ID:
-				strcpy(string_route_id, t->value->cstring);
-				APP_LOG(APP_LOG_LEVEL_INFO, "Received routeID: %s", string_route_id);
-				persist_write_string(KEY_ROUTE_ID, string_route_id);
-				config_available = 1;
-		    break;
-	    case KEY_DIRECTION_ID:
-				strcpy(string_direction_id, t->value->cstring);
-				APP_LOG(APP_LOG_LEVEL_INFO, "Received directionID: %s", string_direction_id);
-				persist_write_string(KEY_DIRECTION_ID, string_direction_id);
-				config_available = 1;
-	      break;
-	    case KEY_STOP_ID:
-				strcpy(string_stop_id, t->value->cstring);
-				APP_LOG(APP_LOG_LEVEL_INFO, "Received stopID: %s", string_stop_id);
-				persist_write_string(KEY_STOP_ID, string_stop_id);
-				config_available = 1;
-	      break;		
 			case KEY_HEALTH:
 				health_status = t->value->int32;
 				APP_LOG(APP_LOG_LEVEL_INFO, "Received Health: %d", (int)health_status);
@@ -195,15 +170,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     // Look for next item
     t = dict_read_next(iterator);
   }	
-	/*
-	if(config_available) {
-    APP_LOG(APP_LOG_LEVEL_INFO, "New config options received and sending to phone!");
-		// Request new times based on new config data
-		// Remove this and handle on the phone while sending the config data. To avoid an extra message.
-		sendDict(GET_PT_DATA);	
-		config_available = 0;
-	}
-	*/
+	
 	if(new_departures_received) {
     APP_LOG(APP_LOG_LEVEL_INFO, "New departures received and displaying on watch!");
 		display_pt_times();
@@ -282,10 +249,7 @@ static void sendDict(int msg_type) {
   app_message_outbox_begin(&config1);
 	
   // Add a key-value pair for each parameter
-  dict_write_cstring(config1, KEY_MODE_ID, string_mode_id);
-  dict_write_cstring(config1, KEY_ROUTE_ID, string_route_id);
-  dict_write_cstring(config1, KEY_DIRECTION_ID, string_direction_id);
-  dict_write_cstring(config1, KEY_STOP_ID, string_stop_id);
+  dict_write_cstring(config1, 0, "0");
   
   // Send the message!
   app_message_outbox_send();
@@ -312,10 +276,8 @@ static void write_time(struct tm tick_time, char *buffer) {
 
 // Run this function at every tick of the clock, i.e. second or minute
 static void handle_tick(struct tm *tick_time, TimeUnits units){  
-  // Request new PT times only if favourite data is present
-	if(config_available==1) {
-		sendDict(GET_PT_DATA);
-	}
+  // Request new PT times
+	sendDict(GET_PT_DATA);
 	
 }
 
@@ -441,36 +403,6 @@ static void init(void) {
   app_message_register_outbox_sent(outbox_sent_callback);
 	
   app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());	
-
-	// For testing only
-	/*
-  persist_write_string(KEY_MODE_ID, "3");
-  persist_write_string(KEY_ROUTE_ID, "3-86-mjp-1");
-  persist_write_string(KEY_DIRECTION_ID, "0");
-  persist_write_string(KEY_STOP_ID, "6049");
-*/
-
-	// Check if any existing favourite route data.
-	if(persist_exists(KEY_MODE_ID) && persist_exists(KEY_ROUTE_ID) && persist_exists(KEY_DIRECTION_ID)) {
-		APP_LOG(APP_LOG_LEVEL_INFO, "Persist data exists.");
-		config_available = 1;
-		// If yes, send a dict of route data
-	  persist_read_string(KEY_MODE_ID, string_mode_id, 2);
-	  persist_read_string(KEY_ROUTE_ID, string_route_id, 15);
-	  persist_read_string(KEY_DIRECTION_ID, string_direction_id, 2);
-	  persist_read_string(KEY_STOP_ID, string_stop_id, 10);
-		
-		sendDict(GET_PT_DATA);
-		
-	} else {
-		APP_LOG(APP_LOG_LEVEL_INFO, "Persist data doesn't exist.");
-		// If no, alert wearer to pick a favourite
-		text_layer_set_text(text_layer_pt_health, "Pick a favourite route.");
-		text_layer_set_text(text_layer_pt_route, "");
-		text_layer_set_text(text_layer_pt_stop, "");
-	  text_layer_set_text(text_layer_pt_time, "");
-	}
-
 
 }
 

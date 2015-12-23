@@ -1,25 +1,38 @@
-// Run this on open.
-// Loads all transport modes.
-// Then, if there is local storage, preselect the stored mode, route & direction
-
-var selectedMode = document.getElementById('select-mode-id');
-var selectedRoute = document.getElementById('select-route-id');
-var selectedDirection = document.getElementById('select-direction-id');
-var selectedStop = document.getElementById('select-stop-id');
+// Some variables
+var selectObjMode = document.getElementById('select-mode-id');
+var selectObjRoute = document.getElementById('select-route-id');
+var selectObjDirection = document.getElementById('select-direction-id');
+var selectObjStop = document.getElementById('select-stop-id');
+var submitButton = document.getElementById('submit-button');
 var storedOptions;
 
+
+// Run this on open.
 (function() {
-  if(localStorage.getItem('options')) {
-  	// Load any previously saved configuration, if available
+	// Disable the submit button until all options have been selected
+	disableSubmit();
+
+	if(localStorage.getItem('options')) {
+  	// Load any previously saved configuration, if available		
 		storedOptions = JSON.parse(localStorage.getItem('options'));
 		console.log('Stored options: ', storedOptions);	
-    
-		// Load the mode options and select the stored mode
+   
+		// Load all options and select the stored option. 
+		loadOptions((localStorage.getItem('options_list_mode')), selectObjMode);
+		loadOptions((localStorage.getItem('options_list_route')), selectObjRoute);
+		loadOptions((localStorage.getItem('options_list_direction')), selectObjDirection);
+		loadOptions((localStorage.getItem('options_list_stop')), selectObjStop);
+		
+		selectObjMode.value = storedOptions['mode_id'];
+		selectObjRoute.value = storedOptions['route_id'];
+		selectObjDirection.value = storedOptions['direction_id'];
+		selectObjStop.value = storedOptions['stop_id'];
+		
+		enableSubmit();
+	} else {
+		// Otherwise just load the modes and the user will begin selecting
 		loadModes();
-		loadRoutes(storedOptions['mode_id']);
-		loadDirections(storedOptions['mode_id'], storedOptions['route_id']);
-		loadStops(storedOptions['mode_id'], storedOptions['route_id'], storedOptions['direction_id']);
-	} 
+	}
 	
 })();
 
@@ -29,54 +42,87 @@ function loadModes() {
 	callScript('./php/loadModes.php', loadModesCallback);
 }
 function loadModesCallback(data) {
-	loadOptions(data, selectedMode);
-	if(storedOptions) {
-		selectedMode.value = storedOptions['mode_id'];
-	}
+	loadOptions(data, selectObjMode);
+
 	// Reset routes & directions selectors
-	resetOptions(selectedRoute);
-	resetOptions(selectedDirection);
-	resetOptions(selectedStop);
+	resetOptions(selectObjRoute);
+	resetOptions(selectObjDirection);
+	resetOptions(selectObjStop);
 	
 }
 
 // Get the list of routes for this mode and populate
 function loadRoutes(modeID) {
+	disableSubmit();
+	
 	console.log('Mode is: ' + modeID);
 	callScript('./php/loadRoutes.php?modeID=' + modeID, loadRoutesCallback);
 }
 function loadRoutesCallback(data) {
-	loadOptions(data, selectedRoute);
-	if(storedOptions) {
-		selectedRoute.value = storedOptions['route_id'];
-	}
+	console.log("Route data received is type: " + typeof(data) + ", and value: " + data);
+	
+	loadOptions(data, selectObjRoute);
+
 	// Reset directions selector
-	resetOptions(selectedDirection);
-	resetOptions(selectedStop);	
+	resetOptions(selectObjDirection);
+	resetOptions(selectObjStop);	
 }
 
 function loadDirections(modeID, routeID) {
+	disableSubmit();
+	
 	console.log('Route is: ' + routeID);
 	callScript('./php/loadDirections.php?modeID=' + modeID + '&routeID=\'' + routeID + '\'', loadDirectionsCallback);	
 }
 function loadDirectionsCallback(data) {
-	loadOptions(data, selectedDirection);
-	if(storedOptions) {
-		selectedDirection.value = storedOptions['direction_id'];
-	}
+	console.log("Direction data received is type: " + typeof(data) + ", and value: " + data);
+
+	loadOptions(data, selectObjDirection);
+
 	// Reset stops selector
-	resetOptions(selectedStop);
+	resetOptions(selectObjStop);
 }
 
 function loadStops(modeID, routeID, directionID) {
+	disableSubmit();
+	
 	console.log('Direction is: ' + directionID);		
 	callScript('./php/loadStops.php?modeID=' + modeID + '&routeID=\'' + routeID + '\'&directionID=' + directionID, loadStopsCallback);
 }
 function loadStopsCallback(data) {
-	loadOptions(data, selectedStop);
-	if(storedOptions) {
-		selectedStop.value = storedOptions['stop_id'];
+	console.log("Stop data received is type: " + typeof(data) + ", and value: " + data);
+
+	loadOptions(data, selectObjStop);
+
+	enableSubmit();
+}
+
+// Disable all selectors. They eventually get enabled after the data for each is loaded.
+function disableSelector(sel) {
+	sel.disabled = true;
+}
+
+function enableSelector(sel) {
+	sel.disabled = false;
+}
+
+// Enables the submit button and colours it. This runs when a stop is selected or after loading all localstorage.
+function enableSubmit() {
+	console.log("Checking stop selection: " + selectObjStop.value);
+	if(selectObjStop.value==-1) {
+		disableSubmit();
+	} else {
+		console.log("Enabling Submit");
+		submitButton.disabled = false;
+		submitButton.style.backgroundColor = '#FF4700'; 
 	}
+}
+
+// Disables the submit button and greys it out.
+function disableSubmit() {
+	console.log("Disabling Submit");
+	submitButton.disabled = true;
+	submitButton.style.backgroundColor = 'rgb(136, 136, 136)'; 
 }
 
 // Deletes existing options and adds a prompting 'Select' at the start
@@ -97,8 +143,28 @@ function loadOptions(data, select) {
 		select.options[i] = new Option(json[memberID], memberID)
 		i++;
 	}
+	console.log("Loaded options: " + data);
 	// Select the 'Select' option as default
 	select.value = -1;
+}
+
+// Takes the options from a select object and creates an object out of them
+function objectifyOptions(select) {
+	var opts = select.getElementsByTagName('option');
+	var len = opts.length;
+	
+	var optionsObj = {};
+	var optionValue, optionText;
+	
+	// Start at the second option since the first (0) is 'Select'
+	for(var i = 1; i<len; i++) {
+		console.log(opts[i]);
+		optionValue = opts[i].value;
+		optionText = opts[i].text;
+		optionsObj[optionValue] = optionText;
+	}
+	
+	return optionsObj;
 }
 
 // Calls the PHP script at the specified URL
@@ -112,24 +178,26 @@ function callScript(finalURL, callback) {
   }
   xhr.send();
 }
-	
+
+// Runs after the submit button is pressed to grab all the selected options
 function getConfigData() {
-	// These IDs correspond to those in the HTML tags
-  var mode_id = document.getElementById('select-mode-id');
-  var route_id = document.getElementById('select-route-id');
-  var direction_id = document.getElementById('select-direction-id');
-  var stop_id = document.getElementById('select-stop-id');
-	  
  	// Construct the dictionary to pass back to the watch
   var options = {
-    'mode_id': mode_id.options[mode_id.selectedIndex].value,
-		'route_id': route_id.options[route_id.selectedIndex].value,
-    'direction_id': direction_id.options[direction_id.selectedIndex].value,
-		'stop_id': stop_id.options[stop_id.selectedIndex].value
+    'mode_id': selectObjMode.options[selectObjMode.selectedIndex].value,
+		'route_id': selectObjRoute.options[selectObjRoute.selectedIndex].value,
+    'direction_id': selectObjDirection.options[selectObjDirection.selectedIndex].value,
+		'stop_id': selectObjStop.options[selectObjStop.selectedIndex].value
   };
 
-  // Save for next launch
+  // Clear existing local storage and save for next launch
+	localStorage.clear();
+	
 	localStorage.setItem('options', JSON.stringify(options));
+	localStorage.setItem('options_list_mode', JSON.stringify(objectifyOptions(selectObjMode)));
+	localStorage.setItem('options_list_route', JSON.stringify(objectifyOptions(selectObjRoute)));
+	localStorage.setItem('options_list_direction', JSON.stringify(objectifyOptions(selectObjDirection)));
+	localStorage.setItem('options_list_stop', JSON.stringify(objectifyOptions(selectObjStop)));
+	
 
   console.log('Got options: ' + JSON.stringify(options));
   return options;
@@ -148,7 +216,7 @@ function getQueryParam(variable, defaultValue) {
 }
 
 // Send the config values after the submit button is pressed
-var submitButton = document.getElementById('submit_button');
+var submitButton = document.getElementById('submit-button');
 submitButton.addEventListener('click', function() {
   console.log('Submit');
   // Set the return URL depending on the runtime environment
