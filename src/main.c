@@ -80,7 +80,7 @@ static char string_route_long[40];
 static char string_stop[40];
 static char string_departure_1[] = "0000mins", string_departure_2[] = "0000mins", string_departure_3[] = "0000mins";
 static char string_departure_2_3[] = "0000mins, 0000mins";
-static uint32_t epoch_departure_1, epoch_departure_2, epoch_departure_3;
+static int epoch_departure_1, epoch_departure_2, epoch_departure_3;
 static int health_status;
 
 /* Function Prototypes */
@@ -132,19 +132,19 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
 	      break;
 	    case KEY_DEPARTURE_1:
 				epoch_departure_1 = t->value->int32;
-				APP_LOG(APP_LOG_LEVEL_INFO, "Received time1: %d", (int)epoch_departure_1);
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received time1: %d", epoch_departure_1);
 	      break;
 	    case KEY_DEPARTURE_2:
 				epoch_departure_2 = t->value->int32;
-				APP_LOG(APP_LOG_LEVEL_INFO, "Received time2: %d", (int)epoch_departure_2);
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received time2: %d", epoch_departure_2);
 	      break;
 	    case KEY_DEPARTURE_3:
 				epoch_departure_3 = t->value->int32;
-				APP_LOG(APP_LOG_LEVEL_INFO, "Received time3: %d", (int)epoch_departure_3);
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received time3: %d", epoch_departure_3);
 	      break;
 			case KEY_HEALTH:
 				health_status = t->value->int32;
-				APP_LOG(APP_LOG_LEVEL_INFO, "Received Health: %d", (int)health_status);
+				APP_LOG(APP_LOG_LEVEL_INFO, "Received Health: %d", health_status);
 				break;
 			// Error handling
 		  case KEY_MSG_TYPE:
@@ -206,30 +206,30 @@ static void display_pt_times() {
 	text_layer_set_text(text_layer_pt_stop, string_stop);
 	
 	// Get the current time
-	time_t temp_time = time(NULL); 
+	time_t epoch_now = time(NULL); 
 	
 	// Calc the number of mins until each departure. It will truncate down but that's more conservative so ok.
-	int time_diff_1 = (epoch_departure_1 - temp_time)/60;
-	int time_diff_2 = (epoch_departure_2 - temp_time)/60;
-	int time_diff_3 = (epoch_departure_3 - temp_time)/60;
+	int time_diff_1 = (epoch_departure_1 - (int)epoch_now)/60;
+	int time_diff_2 = (epoch_departure_2 - (int)epoch_now)/60;
+	int time_diff_3 = (epoch_departure_3 - (int)epoch_now)/60;
   //APP_LOG(APP_LOG_LEVEL_INFO, "Mins until departure1: %d", time_diff_1);
   //APP_LOG(APP_LOG_LEVEL_INFO, "Mins until departure2: %d", time_diff_2);
   //APP_LOG(APP_LOG_LEVEL_INFO, "Mins until departure3: %d", time_diff_3);
 	
 	// Display departures
-	if(time_diff_1==0) {
+	if(time_diff_1<=0) {
 		strcpy(string_departure_1, "NOW");
 	} else {
 		snprintf(string_departure_1, sizeof(string_departure_1), "%d", time_diff_1);
 		strcat(string_departure_1, "mins");
 	}
-	if(time_diff_2==0) {
+	if(time_diff_2<=0) {
 		strcpy(string_departure_2, "NOW");
 	} else {
 		snprintf(string_departure_2, sizeof(string_departure_2), "%d", time_diff_2);
 		strcat(string_departure_2, "mins");
 	}	
-	if(time_diff_3==0) {
+	if(time_diff_3<=0) {
 		strcpy(string_departure_3, "NOW");
 	} else {
 		snprintf(string_departure_3, sizeof(string_departure_3), "%d", time_diff_3);
@@ -367,7 +367,7 @@ static void window_load(Window *window) {
   text_layer_set_text(text_layer_pt_route_long, "");
 		
 	// Stop Layer
-	text_layer_rect = (GRect) { .origin = { STOP_LAYER_X + TEXT_LAYER_PADDING, STOP_LAYER_Y }, .size = { bounds.size.w, STOP_LAYER_HEIGHT } };
+	text_layer_rect = (GRect) { .origin = { STOP_LAYER_X + TEXT_LAYER_PADDING, STOP_LAYER_Y }, .size = { bounds.size.w - TEXT_LAYER_PADDING, STOP_LAYER_HEIGHT } };
   text_layer_pt_stop = init_text_layer(text_layer_rect, color_font_pt_stop, GColorClear, font_stop, GTextAlignmentCenter);
   text_layer_set_text(text_layer_pt_stop, "Getting stop...");
 	

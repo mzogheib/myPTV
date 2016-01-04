@@ -21,7 +21,7 @@ $query = "
 	WHERE ".$stop_times.".trip_id = ".$trips.".trip_id
 	AND ".$trips.".route_id = ".$routeID."
 	AND ".$trips.".direction_id = 0
-	ORDER BY ".$stops.".stop_name
+	ORDER BY ".$stop_times.".stop_sequence
 	";
 
 	//echo $query.'<br><br>';

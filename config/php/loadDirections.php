@@ -1,28 +1,11 @@
 <?php
 include('dbConnect.php');
 
-// Not doing anything with this for now
 $modeID = $_GET["modeID"];
 $routeID = $_GET["routeID"];
 
-// Choose the table based on the modeID
-switch ($modeID) {
-    case '3':
-        $table = 'trips3';
-        break;
-    case '4':
-    		$table = 'trips4';
-        break;
-    case '7':
-    		$table = 'trips7';
-        break;
-    case '8':
-   	 		$table = 'trips8';
-        break;
-}
-
 // Get all routes for this modeID
-$result = mysqli_query($db, "SELECT DISTINCT * FROM " . $table . " WHERE route_id = " . $routeID);
+$result = mysqli_query($db, "SELECT DISTINCT * FROM trips" . $modeID . " WHERE route_id = " . $routeID);
 
 // get distinct trip_headsigns from trips table. Then get the text after the 'to'.
 // Each table may have to be handled differently
