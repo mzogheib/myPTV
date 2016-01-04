@@ -34,8 +34,7 @@ $result = mysqli_query($db, $query);
 
 // Save rows into an array
 while ($row = mysqli_fetch_object($result)) {
-	$stop_list[$row->stop_id] = $row->stop_name;
-	
+	$stop_list[$row->stop_id] = array("stop_lat" => $row->stop_lat, "stop_lon" => $row->stop_lon);	
 }
 // Encode as a JSON
 $jsonStop_list = json_encode($stop_list);

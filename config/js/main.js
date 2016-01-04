@@ -2,15 +2,16 @@
 var selectObjMode = document.getElementById('select-mode-id');
 var selectObjRoute = document.getElementById('select-route-id');
 var selectObjDirection = document.getElementById('select-direction-id');
-var selectObjStop = document.getElementById('select-stop-id');
 var submitButton = document.getElementById('submit-button');
 var storedOptions;
 
+var allStops = {};
 
 // Run this on open.
 (function() {
 	// Disable the submit button until all options have been selected
 	disableSubmit();
+	//localStorage.clear();
 
 	if(localStorage.getItem('options')) {
   	// Load any previously saved configuration, if available		
@@ -21,12 +22,10 @@ var storedOptions;
 		loadOptions((localStorage.getItem('options_list_mode')), selectObjMode);
 		loadOptions((localStorage.getItem('options_list_route')), selectObjRoute);
 		loadOptions((localStorage.getItem('options_list_direction')), selectObjDirection);
-		loadOptions((localStorage.getItem('options_list_stop')), selectObjStop);
 		
 		selectObjMode.value = storedOptions['mode_id'];
 		selectObjRoute.value = storedOptions['route_id'];
 		selectObjDirection.value = storedOptions['direction_id'];
-		selectObjStop.value = storedOptions['stop_id'];
 		
 		enableSubmit();
 	} else {
@@ -47,8 +46,6 @@ function loadModesCallback(data) {
 	// Reset routes & directions selectors
 	resetOptions(selectObjRoute);
 	resetOptions(selectObjDirection);
-	resetOptions(selectObjStop);
-	
 }
 
 // Get the list of routes for this mode and populate
@@ -65,7 +62,6 @@ function loadRoutesCallback(data) {
 
 	// Reset directions selector
 	resetOptions(selectObjDirection);
-	resetOptions(selectObjStop);	
 }
 
 function loadDirections(modeID, routeID) {
@@ -78,9 +74,6 @@ function loadDirectionsCallback(data) {
 	console.log("Direction data received is type: " + typeof(data) + ", and value: " + data);
 
 	loadOptions(data, selectObjDirection);
-
-	// Reset stops selector
-	resetOptions(selectObjStop);
 }
 
 function loadStops(modeID, routeID, directionID) {
@@ -92,7 +85,7 @@ function loadStops(modeID, routeID, directionID) {
 function loadStopsCallback(data) {
 	console.log("Stop data received is type: " + typeof(data) + ", and value: " + data);
 
-	loadOptions(data, selectObjStop);
+	allStops = JSON.parse(data);
 
 	enableSubmit();
 }
@@ -108,8 +101,8 @@ function enableSelector(sel) {
 
 // Enables the submit button and colours it. This runs when a stop is selected or after loading all localstorage.
 function enableSubmit() {
-	console.log("Checking stop selection: " + selectObjStop.value);
-	if(selectObjStop.value==-1) {
+	console.log("Checking direction selection: " + selectObjDirection.value);
+	if(selectObjDirection.value==-1) {
 		disableSubmit();
 	} else {
 		console.log("Enabling Submit");
@@ -186,7 +179,7 @@ function getConfigData() {
     'mode_id': selectObjMode.options[selectObjMode.selectedIndex].value,
 		'route_id': selectObjRoute.options[selectObjRoute.selectedIndex].value,
     'direction_id': selectObjDirection.options[selectObjDirection.selectedIndex].value,
-		'stop_id': selectObjStop.options[selectObjStop.selectedIndex].value
+		'all_stops': allStops
   };
 
   // Clear existing local storage and save for next launch
@@ -196,8 +189,6 @@ function getConfigData() {
 	localStorage.setItem('options_list_mode', JSON.stringify(objectifyOptions(selectObjMode)));
 	localStorage.setItem('options_list_route', JSON.stringify(objectifyOptions(selectObjRoute)));
 	localStorage.setItem('options_list_direction', JSON.stringify(objectifyOptions(selectObjDirection)));
-	localStorage.setItem('options_list_stop', JSON.stringify(objectifyOptions(selectObjStop)));
-	
 
   console.log('Got options: ' + JSON.stringify(options));
   return options;

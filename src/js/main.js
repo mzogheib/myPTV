@@ -4,6 +4,7 @@ var apiVersion = '/v2';
 
 // PT to look up
 var localConfig1 = {};
+var stopDistances1 = [];
 
 var dictionary = {};
 var healthCheckStatus = true;
@@ -38,7 +39,13 @@ function callPTVAPI(finalURL, callback) {
   xhr.open("GET", finalURL, true);
   xhr.onreadystatechange = function () {
     if (xhr.readyState == 4 && xhr.status == 200) {
-      callback(xhr.responseText);
+			console.log("responseText: " + xhr.responseText);
+			var responseJSON = JSON.parse(xhr.responseText);
+			if(responseJSON.values == "") {
+				console.log("No data");
+			} else {
+      	callback(xhr.responseText);
+			}
     } 
   }
   xhr.send();
@@ -145,39 +152,75 @@ function specificNextDeparturesGTFS(mode, line, stop, direction, limit) {
 	callPTVAPI(finalURL, specificNextDeparturesCallback);
 }
 
+// Distance in meters between two coordinates.
+// Adapted from http://stackoverflow.com/questions/5396286/sort-list-of-lon-lat-points-start-with-nearest
+function distance(fromLat, fromLon, toLat, toLon) {
+    var radius = 6378137;   // approximate Earth radius, *in meters*
+    fromLat *= (Math.PI / 180);
+		fromLon *= (Math.PI / 180);
+		toLat *= (Math.PI / 180);
+		toLon *= (Math.PI / 180);
+    
+    var deltaLat = toLat - fromLat;
+    var deltaLon = toLon - fromLon;
+		
+    var angle = 2 * Math.asin( Math.sqrt(
+        Math.pow(Math.sin(deltaLat/2), 2) + 
+        Math.cos(fromLat) * Math.cos(toLat) * 
+        Math.pow(Math.sin(deltaLon/2), 2) ) );
+    return radius * angle;
+}
+
+
+
+// If can get location then do things
+function locationSuccess(pos) {
+  var coordinates = pos.coords;
+	console.log("Current location: " + coordinates.latitude + " " + coordinates.longitude);
+	// Save the distance to each stop into an array for sorting
+	for(var stopID in localConfig1.all_stops) {
+		console.log("Stored stop [" + stopID + "]: " + localConfig1.all_stops[stopID].stop_lat + " " + localConfig1.all_stops[stopID].stop_lon);
+		localConfig1.all_stops[stopID].distance =  distance(coordinates.latitude, coordinates.longitude, localConfig1.all_stops[stopID].stop_lat, localConfig1.all_stops[stopID].stop_lon);
+	}
+}
+
+// If cannot get location then don't send anything back. 
+function locationError(err) {
+  console.warn('location error (' + err.code + '): ' + err.message);
+	// Send a location timeout error message back to display default text
+	dictionary = {
+		"KEY_MSG_TYPE": 90
+	};
+	sendDict();
+}
+
 var locationOptions = {
   'timeout': 15000,
   'maximumAge': 60000
 };
 
 function getPTVData() {
+	// Check for stored config data
+	if(localStorage.getItem('localConfig1')!=null) {
+		localConfig1 = JSON.parse(localStorage.getItem('localConfig1'));
+		// Find the current position. Get the closest stop and departures within the locationSuccess callback
+	  window.navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
+	} else {
+		console.log("No local storage");
+	}
 	// Check API health then either call the other APIs or send alert back to Pebble
-	healthCheck();
+	//healthCheck();
 }
 
 // Event listeners
 Pebble.addEventListener('ready', function (e) {
   console.log('JS connected!');
- 	if(localStorage.getItem('localConfig1')!=null) {
-		// Call the API for the stored config
-		console.log("Loading local storage: " + localStorage.getItem('localConfig1'));	
-		localConfig1 = JSON.parse(localStorage.getItem('localConfig1'));
-		getPTVData();
-	} else {
-		console.log("No local storage");
-	}
+	getPTVData();
 });
 
 // Message from the watch to get the PT data from the API
 Pebble.addEventListener('appmessage', function (e) {
-	if(localStorage.getItem('localConfig1')!=null) {
-		// Call the API for the stored config
-		localConfig1 = JSON.parse(localStorage.getItem('localConfig1'));
-		getPTVData();
-	} else {
-		console.log("No local storage");
-	}
-
+	getPTVData();
 });
 
 // User has launched the config page
@@ -201,7 +244,7 @@ Pebble.addEventListener('webviewclosed', function(e) {
 			'mode_id': receivedConfig['mode_id'],
 			'route_id': receivedConfig['route_id'],
 			'direction_id': receivedConfig['direction_id'],
-			'stop_id': receivedConfig['stop_id'],
+			'all_stops': receivedConfig['all_stops'],
 			'limit': "3"
 		};
 		localStorage.setItem('localConfig1', JSON.stringify(localConfig1));
