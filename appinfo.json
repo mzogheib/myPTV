@@ -3,7 +3,7 @@
   "shortName": "myPTV",
   "longName": "myPTV",
   "companyName": "Marwan Zogheib",
-  "versionLabel": "0.6",
+  "versionLabel": "0.7",
   "sdkVersion": "3",
   "targetPlatforms": ["aplite", "basalt"],
   "watchapp": {
