@@ -79,8 +79,8 @@ function healthCheckCallback(data) {
 	// Handle the health check status
 	if(healthCheckStatus) {
 		// Carry on with getting PTV data
-		console.log("Getting new PTV data for " + localConfig1['mode_id'] + " " + localConfig1['route_id'] + " " + localConfig1['direction_id'] + " " + localConfig1['stop_id'] + " ")	
-		specificNextDeparturesGTFS(localConfig1['mode_id'], localConfig1['route_id'], localConfig1['stop_id'], localConfig1['direction_id'], localConfig1['limit']);
+		console.log("Getting new PTV data for " + localConfig1.modeID + " " + localConfig1.routeID + " " + localConfig1.directionID + " " + localConfig1.allStops[0].stopID);
+		specificNextDeparturesGTFS(localConfig1.modeID,  localConfig1.routeID, localConfig1.allStops[0].stopID, localConfig1.directionID, localConfig1.limit);
 	} else {
 		// Return a bad health check result to the watch
 		dictionary = {
@@ -171,17 +171,34 @@ function distance(fromLat, fromLon, toLat, toLon) {
     return radius * angle;
 }
 
-
-
 // If can get location then do things
 function locationSuccess(pos) {
   var coordinates = pos.coords;
 	console.log("Current location: " + coordinates.latitude + " " + coordinates.longitude);
-	// Save the distance to each stop into an array for sorting
-	for(var stopID in localConfig1.all_stops) {
-		console.log("Stored stop [" + stopID + "]: " + localConfig1.all_stops[stopID].stop_lat + " " + localConfig1.all_stops[stopID].stop_lon);
-		localConfig1.all_stops[stopID].distance =  distance(coordinates.latitude, coordinates.longitude, localConfig1.all_stops[stopID].stop_lat, localConfig1.all_stops[stopID].stop_lon);
+	
+	// Calculate and save the distance from current location to each stop
+	// Config string is not being returned correctly
+	var stops = localConfig1.allStops;
+	for(var i=0; i<stops.length; i++) {
+		var lat = stops[i].stopLat;
+		var lon = stops[i].stopLon;
+		stops[i].distance =  distance(coordinates.latitude, coordinates.longitude, lat, lon);
+		console.log("Stored stop [" + stops[i].stopID + "]: " + lat + " " + lon + " " + stops[i].distance);
 	}
+	
+	// Sort the stop list based on closest distance
+	stops.sort(function(a, b){return a.distance-b.distance});
+	for(var i=0; i<stops.length; i++) {
+		var lat = stops[i].stopLat;
+		var lon = stops[i].stopLon;
+		console.log("Stored sorted stop [" + stops[i].stopID + "]: " + lat + " " + lon + " " + stops[i].distance);
+	}
+		
+	// Get departures for this stop 
+	console.log("Nearest stop is: " + localConfig1.allStops[0].stopID + " " + localConfig1.allStops[0].distance);
+	// Check API health then either call the other APIs or send alert back to Pebble
+	healthCheck();
+	
 }
 
 // If cannot get location then don't send anything back. 
@@ -200,27 +217,40 @@ var locationOptions = {
 };
 
 function getPTVData() {
-	// Check for stored config data
-	if(localStorage.getItem('localConfig1')!=null) {
+	// Load the config data.
+	var haveConfig = false;
+	if(Object.keys(localConfig1).length>0) {
+		// Have config from an active session
+		haveConfig = true;
+	} else if(localStorage.getItem('localConfig1')!=null) {
+		// Have locally stored config
+		console.log("Will parse: " + localStorage.getItem('localConfig1'));
 		localConfig1 = JSON.parse(localStorage.getItem('localConfig1'));
+		console.log("Stored config string is: " + localConfig1);
+		haveConfig = true;
+	} else {
+		// Don't have any config. Keep false
+	}
+	
+	// Check for stored config data
+	if(haveConfig) {
 		// Find the current position. Get the closest stop and departures within the locationSuccess callback
 	  window.navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
 	} else {
 		console.log("No local storage");
 	}
-	// Check API health then either call the other APIs or send alert back to Pebble
-	//healthCheck();
 }
 
 // Event listeners
 Pebble.addEventListener('ready', function (e) {
   console.log('JS connected!');
+	//localStorage.clear();
 	getPTVData();
 });
 
 // Message from the watch to get the PT data from the API
 Pebble.addEventListener('appmessage', function (e) {
-	getPTVData();
+	getPTVData()
 });
 
 // User has launched the config page
@@ -236,19 +266,16 @@ Pebble.addEventListener('showConfiguration', function() {
 // User has submitted the config. Store the config and call the API.
 Pebble.addEventListener('webviewclosed', function(e) {
   if(e.response!='') {	
-		var receivedConfig = JSON.parse(decodeURIComponent(e.response));
-	  console.log('Config returned: ' + JSON.stringify(receivedConfig));
-
-		// Save the config ids for the API call
-		localConfig1 = {
-			'mode_id': receivedConfig['mode_id'],
-			'route_id': receivedConfig['route_id'],
-			'direction_id': receivedConfig['direction_id'],
-			'all_stops': receivedConfig['all_stops'],
-			'limit': "3"
-		};
-		localStorage.setItem('localConfig1', JSON.stringify(localConfig1));
-	
+	  console.log('Config uri returned: ' + e.response);
+		// First, decode the uri
+		var configString1 = decodeURIComponent(e.response);
+		
+		// Store the config string into local storage
+		localStorage.setItem('localConfig1', configString1);
+		
+		// Then, parse the string into an object
+		localConfig1 = JSON.parse(configString1);
+		
 		// Get and send the PTV data
 		getPTVData();
 	} else {
