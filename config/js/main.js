@@ -5,7 +5,7 @@ var selectObjDirection = document.getElementById('select-direction-id');
 var submitButton = document.getElementById('submit-button');
 var storedOptions;
 
-var allStops = {};
+var allStops = [];
 
 // Run this on open.
 (function() {
@@ -19,13 +19,14 @@ var allStops = {};
 		console.log('Stored options: ', storedOptions);	
    
 		// Load all options and select the stored option. 
+		// Doing this to improve performance (i.e. no db query) but if the list in the db changes in future then this local list will not be aligned
 		loadOptions((localStorage.getItem('options_list_mode')), selectObjMode);
 		loadOptions((localStorage.getItem('options_list_route')), selectObjRoute);
 		loadOptions((localStorage.getItem('options_list_direction')), selectObjDirection);
 		
-		selectObjMode.value = storedOptions['mode_id'];
-		selectObjRoute.value = storedOptions['route_id'];
-		selectObjDirection.value = storedOptions['direction_id'];
+		selectObjMode.value = storedOptions['modeID'];
+		selectObjRoute.value = storedOptions['routeID'];
+		selectObjDirection.value = storedOptions['directionID'];
 		
 		enableSubmit();
 	} else {
@@ -76,6 +77,14 @@ function loadDirectionsCallback(data) {
 	loadOptions(data, selectObjDirection);
 }
 
+// The stop object
+function Stop(stopID, stopLat, stopLon) {
+	this.stopID = stopID;
+	this.stopLat = stopLat;
+	this.stopLon = stopLon;
+}
+
+// Gets all the stops for a mode, route and direction. Saves into an array that will be passed back to the phone when submit is pressed (below)
 function loadStops(modeID, routeID, directionID) {
 	disableSubmit();
 	
@@ -85,7 +94,14 @@ function loadStops(modeID, routeID, directionID) {
 function loadStopsCallback(data) {
 	console.log("Stop data received is type: " + typeof(data) + ", and value: " + data);
 
-	allStops = JSON.parse(data);
+	var allStopsObj = JSON.parse(data);
+	//console.log(allStopsObj);
+	for(var stopID in allStopsObj) {
+		var lat = allStopsObj[stopID].stop_lat;
+		var lon = allStopsObj[stopID].stop_lon;
+		//console.log("Lat: " + lat + " Lon: " + lon);
+		allStops.push(new Stop(stopID, lat, lon));
+	}
 
 	enableSubmit();
 }
@@ -176,10 +192,11 @@ function callScript(finalURL, callback) {
 function getConfigData() {
  	// Construct the dictionary to pass back to the watch
   var options = {
-    'mode_id': selectObjMode.options[selectObjMode.selectedIndex].value,
-		'route_id': selectObjRoute.options[selectObjRoute.selectedIndex].value,
-    'direction_id': selectObjDirection.options[selectObjDirection.selectedIndex].value,
-		'all_stops': allStops
+    'modeID': selectObjMode.options[selectObjMode.selectedIndex].value,
+		'routeID': selectObjRoute.options[selectObjRoute.selectedIndex].value,
+    'directionID': selectObjDirection.options[selectObjDirection.selectedIndex].value,
+		'allStops': allStops, 
+		'limit': 3 /* hard coded for now */
   };
 
   // Clear existing local storage and save for next launch
