@@ -80,7 +80,7 @@ function healthCheckCallback(data) {
 	if(healthCheckStatus) {
 		// Carry on with getting PTV data
 		console.log("Getting new PTV data for " + localConfig1.modeID + " " + localConfig1.routeID + " " + localConfig1.directionID + " " + localConfig1.allStops[0].stopID);
-		specificNextDeparturesGTFS(localConfig1.modeID,  localConfig1.routeID, localConfig1.allStops[0].stopID, localConfig1.directionID, localConfig1.limit);
+		specificNextDepartures(localConfig1.modeID,  localConfig1.routeID, localConfig1.allStops[0].stopID, localConfig1.directionID, localConfig1.limit);
 	} else {
 		// Return a bad health check result to the watch
 		dictionary = {
@@ -145,8 +145,8 @@ function specificNextDeparturesCallback(data) {
 	sendDict();
 }
 
-function specificNextDeparturesGTFS(mode, line, stop, direction, limit) {
-	var params = '/mode/' + mode + '/route_id/' + line + '/stop/' + stop + '/direction/' + direction + '/departures/all/limit/' + limit + '?';
+function specificNextDepartures(mode, line, stop, direction, limit) {
+	var params = '/mode/' + mode + '/line/' + line + '/stop/' + stop + '/direction/' + direction + '/departures/all/limit/' + limit + '?';
 	var finalURL = getURLWithSignature(baseURL, params, devID, key);
 	console.log(finalURL);
 	callPTVAPI(finalURL, specificNextDeparturesCallback);
@@ -256,7 +256,7 @@ Pebble.addEventListener('appmessage', function (e) {
 // User has launched the config page
 Pebble.addEventListener('showConfiguration', function() {
 	// Can make the page index.php and pass variables through the URL if parameters are required
-  //var url = 'http://localhost:8888/'
+  //var url = 'http://localhost:8000/'
 	var url = 'http://www.marwanz.com/ptv_db/';
   console.log('Showing configuration page: ' + url);
 

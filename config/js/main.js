@@ -38,7 +38,7 @@ var allStops = [];
 
 // Get the list of modes and populate
 function loadModes() {
-	console.log("Loading routes...");
+	console.log("Loading modes...");
 	callScript('./php/loadModes.php', loadModesCallback);
 }
 function loadModesCallback(data) {
@@ -54,6 +54,7 @@ function loadRoutes(modeID) {
 	disableSubmit();
 	
 	console.log('Mode is: ' + modeID);
+	console.log("Loading routes...");
 	callScript('./php/loadRoutes.php?modeID=' + modeID, loadRoutesCallback);
 }
 function loadRoutesCallback(data) {
@@ -69,7 +70,7 @@ function loadDirections(modeID, routeID) {
 	disableSubmit();
 	
 	console.log('Route is: ' + routeID);
-	callScript('./php/loadDirections.php?modeID=' + modeID + '&routeID=\'' + routeID + '\'', loadDirectionsCallback);	
+	callScript('./php/loadDirections.php?modeID=' + modeID + '&routeID=' + routeID, loadDirectionsCallback);	
 }
 function loadDirectionsCallback(data) {
 	console.log("Direction data received is type: " + typeof(data) + ", and value: " + data);
@@ -89,7 +90,7 @@ function loadStops(modeID, routeID, directionID) {
 	disableSubmit();
 	
 	console.log('Direction is: ' + directionID);		
-	callScript('./php/loadStops.php?modeID=' + modeID + '&routeID=\'' + routeID + '\'&directionID=' + directionID, loadStopsCallback);
+	callScript('./php/loadStops.php?modeID=' + modeID + '&routeID=' + routeID + '&directionID=' + directionID, loadStopsCallback);
 }
 function loadStopsCallback(data) {
 	console.log("Stop data received is type: " + typeof(data) + ", and value: " + data);
