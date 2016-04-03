@@ -256,9 +256,9 @@ Pebble.addEventListener('appmessage', function (e) {
 // User has launched the config page
 Pebble.addEventListener('showConfiguration', function() {
 	// Can make the page index.php and pass variables through the URL if parameters are required
-  //var url = 'http://localhost:8888/'
-	var url = 'http://www.marwanz.com/ptv_db/';
-  console.log('Showing configuration page: ' + url);
+    var url = 'http://localhost:8080/';
+    // var url = 'http://www.marwanz.com/ptv_db/';
+    console.log('Showing configuration page: ' + url);
 
   Pebble.openURL(url);
 });
