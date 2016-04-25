@@ -4,8 +4,6 @@ var concat = require('gulp-concat');
 var runSequence = require('run-sequence');
 var merge = require('merge-stream');
 
-
-
 var paths = {
     dest: {
         js: 'config/dist/js',
@@ -19,6 +17,7 @@ var paths = {
         html: 'config/src/index.html',
         js: [
             'config/src/js/private/keyInfo.js',
+            'config/src/js/utils.js',
             'config/src/js/main.js'
         ]
     },
@@ -28,7 +27,7 @@ var paths = {
         fonts: 'config/src/fonts/*',
         js: [
             'config/src/js/libs/hmac-sha1.js',
-            'config/src/js/slate.min.js'
+            'config/src/js/libs/slate.min.js'
         ]   
     }
 }

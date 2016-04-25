@@ -26,12 +26,13 @@ def build(ctx):
     ctx.load('pebble_sdk')
 
     js_libs = [
-			'../src/js/libs/hmac-sha1.js'
+        '../src/js/libs/hmac-sha1.js'
 		]
 
     js_sources = [
-			'../src/js/keyInfo.js',
-		  '../src/js/main.js'
+        '../src/js/private/keyInfo.js',
+        '../src/js/private/configInfo.js',
+        '../src/js/main.js'
 		]
     built_js = '../src/js/pebble-js-app.js'
 

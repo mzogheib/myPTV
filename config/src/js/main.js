@@ -3,6 +3,7 @@ var selectObjMode = document.getElementById('select-mode-id');
 var selectObjRoute = document.getElementById('select-route-id');
 var selectObjDirection = document.getElementById('select-direction-id');
 var submitButton = document.getElementById('submit-button');
+
 var storedOptions;
 
 var allStops = [];
@@ -73,7 +74,7 @@ function linesByModeCallback(data) {
 	
 	
 	// Create options for each route.
-	options = [];
+	var options = [];
 	for(var i=0; i<routes.length; i++) {	
 		// For busses, only add metro busses
 		if(routes[i].route_type == 2) {
@@ -212,10 +213,10 @@ function Stop(stopID, stopLat, stopLon) {
 (function() {
 	// Disable the submit button until all options have been selected
 	disableSubmit();
-	//localStorage.clear();
+    localStorage.clear();
 
 	// Do a health check. 
-  xhr(healthCheckURL(), healthCheckCallback);
+    xhr(healthCheckURL(), healthCheckCallback);
 
 	if(localStorage.getItem('options')) {
   	// Load any previously saved configuration, if available		
@@ -240,17 +241,18 @@ function Stop(stopID, stopLat, stopLon) {
 	
 })();
 
+
 // Get the list of modes and populate. Called on page load.
 function loadModes() {
 	console.log("Loading modes...");
-	options = [];
+	var options = [];
 	options[0] = new Option("Train", 0);
 	options[1] = new Option("Tram", 1);
 	options[2] = new Option("Bus", 2);
 	options[3] = new Option("V/Line", 3);
 	options[4] = new Option("Nightrider", 4);
 	
-	// Load the mode options into the selector
+	// Load the mode options into the selector... stringyfying here is silly, you should parse local storage first before sending to this function (above)
 	loadOptions(options, selectObjMode);
 
 	// Reset routes & directions selectors
@@ -295,89 +297,14 @@ function loadDirections(modeID, routeID) {
 	} else {
 		console.log('Route is: ' + routeID);
 		xhr(stopsOnALineURL(modeID, routeID), stopsOnALineCallback);
+        
 	}
 }
 
-// Disable all selectors. They eventually get enabled after the data for each is loaded.
-function disableSelector(sel) {
-	sel.disabled = true;
-}
-
-function enableSelector(sel) {
-	sel.disabled = false;
-}
-
-// Enables the submit button and colours it. This runs when a stop is selected or after loading all localstorage.
-function enableSubmit() {
-	console.log("Checking direction selection: " + selectObjDirection.value);
-	if(selectObjDirection.value==-1) {
-		disableSubmit();
-	} else {
-		console.log("Enabling Submit");
-		submitButton.disabled = false;
-		submitButton.style.backgroundColor = '#FF4700'; 
-	}
-}
-
-// Disables the submit button and greys it out.
-function disableSubmit() {
-	console.log("Disabling Submit");
-	submitButton.disabled = true;
-	submitButton.style.backgroundColor = 'rgb(136, 136, 136)'; 
-}
-
-// Deletes existing options and adds a prompting 'Select' at the start
-function resetOptions(select) {
-	select.options.length=0;
-	select.options[0] = new Option("Select", -1);
-}
-
-// Generic function to load the contents of the data variable (returned from a PHP script) into the select element
-function loadOptions(options, select) {
-	// Reset the selector
-	resetOptions(select);
-
-	// Set the length based on the incoming options. Plus one for the 'Select' option
-	select.options.length = 1 + options.length;
-	for(var i = 1; i<select.options.length; i++) {
-		select.options[i] = options[i-1];
-	}
-
-	console.log("Loaded options: " + options);
-	// Select the 'Select' option as default
-	select.value = -1;
-	enableSelector(select);
-}
-
-// Takes the options from a select object and creates an object out of them
-function objectifyOptions(select) {
-	var opts = select.getElementsByTagName('option');
-	var len = opts.length;
-	
-	var optionsObj = {};
-	var optionValue, optionText;
-	
-	// Start at the second option since the first (0) is 'Select'
-	for(var i = 1; i<len; i++) {
-		console.log(opts[i]);
-		optionValue = opts[i].value;
-		optionText = opts[i].text;
-		optionsObj[optionValue] = optionText;
-	}
-	
-	return optionsObj;
-}
-
-// Gets what ever is at that URL
-function xhr(finalURL, callback) {
- 	var xhr = new XMLHttpRequest();
-  xhr.open("GET", finalURL, true);
-  xhr.onreadystatechange = function () {
-    if (xhr.readyState == 4 && xhr.status == 200) {
-      callback(xhr.responseText);
-    } 
-  }
-  xhr.send();
+// Direction has just been chosen, check if Submit should be enabled
+function directionSelected(directionID) {
+    directionID == -1 ? disableSubmit() : enableSubmit();
+    getConfigData();
 }
 
 // Runs after the submit button is pressed to grab all the selected options
@@ -385,13 +312,13 @@ function getConfigData() {
  	// Construct the dictionary to pass back to the watch
   var options = {
     'modeID': selectObjMode.options[selectObjMode.selectedIndex].value,
-		'routeID': selectObjRoute.options[selectObjRoute.selectedIndex].value,
+	'routeID': selectObjRoute.options[selectObjRoute.selectedIndex].value,
     'directionID': selectObjDirection.options[selectObjDirection.selectedIndex].value,
-		'allStops': allStops, 
-		'limit': 3 /* hard coded for now */
+	'allStops': allStops, 
+	'limit': 3 /* hard coded for now */
   };
 
-  // Clear existing local storage and save for next launch
+    // Clear existing local storage and save for next launch
 	localStorage.clear();
 	
 	localStorage.setItem('options', JSON.stringify(options));
@@ -416,7 +343,6 @@ function getQueryParam(variable, defaultValue) {
 }
 
 // Send the config values after the submit button is pressed
-var submitButton = document.getElementById('submit-button');
 submitButton.addEventListener('click', function() {
   console.log('Submit');
   // Set the return URL depending on the runtime environment
