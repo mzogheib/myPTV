@@ -1,0 +1,20 @@
+/* Custom styling, based on the slate.css file */
+.item-button {
+	width: 45%;
+}
+
+#edit-button-container {
+	padding-left: 5%;
+}
+
+#submit-button-container {
+	padding-right: 5%;
+}
+
+#edit-button {
+	float: left;
+}
+
+#submit-button {
+	float: right;
+}

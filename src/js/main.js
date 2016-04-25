@@ -39,7 +39,7 @@ function callPTVAPI(finalURL, callback) {
   xhr.open("GET", finalURL, true);
   xhr.onreadystatechange = function () {
     if (xhr.readyState == 4 && xhr.status == 200) {
-			console.log("responseText: " + xhr.responseText);
+            // console.log("responseText: " + xhr.responseText);
 			var responseJSON = JSON.parse(xhr.responseText);
 			if(responseJSON.values == "") {
 				console.log("No data");
@@ -51,7 +51,7 @@ function callPTVAPI(finalURL, callback) {
   xhr.send();
 }
 
-// Function to conduct a health check on the PTV API
+// Function to conduct a health check on the PTV callPTVAPI
 function healthCheck() {
   var date = new Date();
   var params = '/healthcheck?timestamp=' + date.toISOString();
@@ -80,7 +80,7 @@ function healthCheckCallback(data) {
 	if(healthCheckStatus) {
 		// Carry on with getting PTV data
 		console.log("Getting new PTV data for " + localConfig1.modeID + " " + localConfig1.routeID + " " + localConfig1.directionID + " " + localConfig1.allStops[0].stopID);
-		specificNextDeparturesGTFS(localConfig1.modeID,  localConfig1.routeID, localConfig1.allStops[0].stopID, localConfig1.directionID, localConfig1.limit);
+		specificNextDepartures(localConfig1.modeID,  localConfig1.routeID, localConfig1.allStops[0].stopID, localConfig1.directionID, localConfig1.limit);
 	} else {
 		// Return a bad health check result to the watch
 		dictionary = {
@@ -145,10 +145,10 @@ function specificNextDeparturesCallback(data) {
 	sendDict();
 }
 
-function specificNextDeparturesGTFS(mode, line, stop, direction, limit) {
-	var params = '/mode/' + mode + '/route_id/' + line + '/stop/' + stop + '/direction/' + direction + '/departures/all/limit/' + limit + '?';
+function specificNextDepartures(mode, line, stop, direction, limit) {
+	var params = '/mode/' + mode + '/line/' + line + '/stop/' + stop + '/directionid/' + direction + '/departures/all/limit/' + limit + '?';
 	var finalURL = getURLWithSignature(baseURL, params, devID, key);
-	console.log(finalURL);
+	console.log("Specific: " + finalURL);
 	callPTVAPI(finalURL, specificNextDeparturesCallback);
 }
 
@@ -183,7 +183,7 @@ function locationSuccess(pos) {
 		var lat = stops[i].stopLat;
 		var lon = stops[i].stopLon;
 		stops[i].distance =  distance(coordinates.latitude, coordinates.longitude, lat, lon);
-		console.log("Stored stop [" + stops[i].stopID + "]: " + lat + " " + lon + " " + stops[i].distance);
+        // console.log("Stored stop [" + stops[i].stopID + "]: " + lat + " " + lon + " " + stops[i].distance);
 	}
 	
 	// Sort the stop list based on closest distance
@@ -191,7 +191,7 @@ function locationSuccess(pos) {
 	for(var i=0; i<stops.length; i++) {
 		var lat = stops[i].stopLat;
 		var lon = stops[i].stopLon;
-		console.log("Stored sorted stop [" + stops[i].stopID + "]: " + lat + " " + lon + " " + stops[i].distance);
+        // console.log("Stored sorted stop [" + stops[i].stopID + "]: " + lat + " " + lon + " " + stops[i].distance);
 	}
 		
 	// Get departures for this stop 
@@ -244,7 +244,7 @@ function getPTVData() {
 // Event listeners
 Pebble.addEventListener('ready', function (e) {
   console.log('JS connected!');
-	//localStorage.clear();
+    // localStorage.clear();
 	getPTVData();
 });
 
@@ -255,12 +255,9 @@ Pebble.addEventListener('appmessage', function (e) {
 
 // User has launched the config page
 Pebble.addEventListener('showConfiguration', function() {
-	// Can make the page index.php and pass variables through the URL if parameters are required
-  //var url = 'http://localhost:8888/'
-	var url = 'http://www.marwanz.com/ptv_db/';
-  console.log('Showing configuration page: ' + url);
+    console.log('Showing configuration page: ' + configURL);
 
-  Pebble.openURL(url);
+    Pebble.openURL(configURL);
 });
 
 // User has submitted the config. Store the config and call the API.
@@ -270,7 +267,8 @@ Pebble.addEventListener('webviewclosed', function(e) {
 		// First, decode the uri
 		var configString1 = decodeURIComponent(e.response);
 		
-		// Store the config string into local storage
+		// Clear the local storage then save the incoming config
+        localStorage.clear();
 		localStorage.setItem('localConfig1', configString1);
 		
 		// Then, parse the string into an object

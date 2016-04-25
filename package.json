@@ -1,0 +1,26 @@
+{
+  "name": "myptv",
+  "version": "1.0.0",
+  "description": "An app that displays the next departures at the nearest stop of your favourite route.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mzogheib/myPTV.git"
+  },
+  "author": "mzogheib",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mzogheib/myPTV/issues"
+  },
+  "homepage": "https://github.com/mzogheib/myPTV#readme",
+  "devDependencies": {
+    "del": "^2.2.0",
+    "gulp": "^3.9.1",
+    "gulp-concat": "^2.6.0",
+    "merge-stream": "^1.0.0",
+    "run-sequence": "^1.1.5"
+  }
+}
