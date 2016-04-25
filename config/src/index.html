@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>myPTV Configuration</title>
+        <link rel='stylesheet' type='text/css' href='css/slate.min.css'>
+	
+        <style>
+            .title {
+                padding: 15px 10px;
+                text-transform: uppercase;
+                font-family: 'PT Sans', sans-serif;
+                font-size: 1.2em;
+                font-weight: 500;
+                color: #888888;
+                text-align: center;
+            }
+        </style>
+    </head>
+    
+    <body>
+        <h1 class="title">Configuration</h1>
+       
+        <div class="item-container">
+            <div class="item-container-header">Pick your favourite</div>
+            <div class="item-container-content">
+                <label class="item" id="mode-id">
+                    Mode
+                    <select name="select-mode-id" id="select-mode-id" dir='rtl' class="item-select" onchange="loadRoutes(selectObjMode.value)"><!--from DB--></select>
+                </label>
+                <label class="item" id="route-id">
+                    Route
+                    <select name="select-route-id" id="select-route-id" dir='rtl' class="item-select" onchange="loadDirections(selectObjMode.value, selectObjRoute.value)"><!--from DB--></select>
+                </label>
+                <label class="item" id="direction-id">
+                    Direction
+                    <select name="select-direction-id" id="select-direction-id" dir='rtl' class="item-select" onchange="directionSelected(selectObjDirection.value)"><!--from DB--></select>
+                </label>
+            </div>
+        </div>
+
+        <div class="item-container">
+            <div id="submit-button-container" class="button-container">
+                <input id="submit-button" type="button" class="item-button" value="SUBMIT">
+            </div>
+        </div>
+    </body>
+
+    <script src='js/main.js'></script>
+</html>
