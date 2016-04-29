@@ -88,6 +88,12 @@ function linesByModeCallback(data) {
 	
 	// Load the line options into the selector
 	loadOptions(options, selectObjRoute);
+    
+    // If there is a stored route selection then preselect it and load its directions
+    if(storedOptions) {
+        selectObjRoute.value = storedOptions['routeID'];
+        loadDirections(selectObjMode.value, selectObjRoute.value);
+    }
 
 	// Reset directions selector
 	resetOptions(selectObjDirection);
@@ -153,6 +159,12 @@ function broadNextDeparturesCallback(data) {
 	// If two directions were found then load to the selector. Else, try the next stop.
 	if(allDirections.length == 2) {
 		loadOptions(allDirections, selectObjDirection);
+        
+        // If there is a stored direction selection then preselect it
+        if(storedOptions) {
+            selectObjDirection.value = storedOptions['directionID'];
+            directionSelected(selectObjDirection.value);
+        }
 	} else {
 		allStopsTemp.pop();
 		// If we've checked all stops
@@ -213,31 +225,44 @@ function Stop(stopID, stopLat, stopLon) {
 (function() {
 	// Disable the submit button until all options have been selected
 	disableSubmit();
-    localStorage.clear();
+    // localStorage.clear();
 
 	// Do a health check. 
     xhr(healthCheckURL(), healthCheckCallback);
 
-	if(localStorage.getItem('options')) {
-  	// Load any previously saved configuration, if available		
-		storedOptions = JSON.parse(localStorage.getItem('options'));
-		console.log('Stored options: ', storedOptions);	
-   
-		// Load all options and select the stored option. 
-		// Doing this to improve performance (i.e. no db query) but if the list in the db changes in future then this local list will not be aligned
-		loadOptions((localStorage.getItem('options_list_mode')), selectObjMode);
-		loadOptions((localStorage.getItem('options_list_route')), selectObjRoute);
-		loadOptions((localStorage.getItem('options_list_direction')), selectObjDirection);
-		
-		selectObjMode.value = storedOptions['modeID'];
-		selectObjRoute.value = storedOptions['routeID'];
-		selectObjDirection.value = storedOptions['directionID'];
-		
-		enableSubmit();
-	} else {
-		// Otherwise just load the modes and the user will begin selecting
-		loadModes();
-	}
+    // Load any previously saved configuration, if available		
+	storedOptions = JSON.parse(localStorage.getItem('options'));
+	console.log('Stored options: ', storedOptions);	
+
+    loadModes();
+
+//     if(localStorage.getItem('options')) {
+//
+//
+//         // Load all options and select the stored option.
+//         // 1. Load modes and preselect mode
+//         // 2. Load routes for mode and preselect route
+//         // 3. Load directions for route and preselect direction
+//
+//         loadModes();
+//         selectObjMode.value = storedOptions['modeID'];
+//         loadRoutes(selectObjMode.value);
+//         selectObjRoute.value = storedOptions['routeID'];
+//         loadDirections(selectObjMode.value, selectObjRoute.value);
+//         selectObjDirection.value = storedOptions['directionID'];
+//
+//         // loadOptions((localStorage.getItem('options_list_mode')), selectObjMode);
+// //         loadOptions((localStorage.getItem('options_list_route')), selectObjRoute);
+// //         loadOptions((localStorage.getItem('options_list_direction')), selectObjDirection);
+// //
+// //         selectObjRoute.value = storedOptions['routeID'];
+// //         selectObjDirection.value = storedOptions['directionID'];
+//
+//         enableSubmit();
+//     } else {
+//         // Otherwise just load the modes and the user will begin selecting
+//         loadModes();
+//     }
 	
 })();
 
@@ -252,16 +277,20 @@ function loadModes() {
 	options[3] = new Option("V/Line", 3);
 	options[4] = new Option("Nightrider", 4);
 	
-	// Load the mode options into the selector... stringyfying here is silly, you should parse local storage first before sending to this function (above)
+	// Load the mode options into the selector
 	loadOptions(options, selectObjMode);
+    
+    // If there is a stored mode selection then preselect it and load its routes
+    if(storedOptions) {
+        selectObjMode.value = storedOptions['modeID'];
+        loadRoutes(selectObjMode.value);
+    }
 
 	// Reset routes & directions selectors
 	resetOptions(selectObjRoute);
 	resetOptions(selectObjDirection);
 	disableSelector(selectObjRoute);
-	disableSelector(selectObjDirection);
-	
-	
+	disableSelector(selectObjDirection);	
 }
 
 // Get the list of routes for this mode and populate. Called when a mode is selected.
