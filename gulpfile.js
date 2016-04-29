@@ -1,8 +1,9 @@
-var gulp = require('gulp');
-var del = require('del');
 var concat = require('gulp-concat');
-var runSequence = require('run-sequence');
+var del = require('del');
+var gulp = require('gulp');
 var merge = require('merge-stream');
+var runSequence = require('run-sequence');
+var watch = require('gulp-watch');
 
 var paths = {
     dest: {
@@ -30,8 +31,25 @@ var paths = {
             'config/src/js/libs/slate.min.js'
         ]   
     }
-}
+};
 
+/**
+ * Main Tasks
+ */
+gulp.task('default', ['build', 'watch']);
+
+/**
+ * Watch task
+ */
+gulp.task('watch', ['build'], function () {
+    watch(paths.appFiles.js, function () {
+        gulp.start('concatJS');
+    });
+
+    watch(paths.appFiles.html, function () {
+        gulp.start('copy');
+    });
+});
 
 /**
  * Build task
