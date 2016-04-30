@@ -17,70 +17,70 @@ var healthCheckComplete = false;
 
 // Send a dictionary of data to the Pebble
 function sendDict() {
-	// Send
-  Pebble.sendAppMessage(dictionary,
-    function(e) { console.log("Message sent to Pebble successfully!"); },
-    function(e) { console.log("Error sending message to Pebble!"); }
-  );	
-	dictionary = {};
+    // Send
+    Pebble.sendAppMessage(
+        dictionary, 
+        function(e) { console.log("Message sent to Pebble successfully!"); },
+        function(e) { console.log("Error sending message to Pebble!"); }
+    );	
+    dictionary = {};
 }
 
 // Returns the complete API URL with calculated signature
 function getURLWithSignature(baseURL, params, devID, key) {
-  var endPoint = apiVersion + params + '&devid=' + devID;
-  var signature = CryptoJS.HmacSHA1(endPoint, key);
-
-  return baseURL + endPoint + '&signature=' + signature.toString();
+    var endPoint = apiVersion + params + '&devid=' + devID;
+    var signature = CryptoJS.HmacSHA1(endPoint, key);
+    
+    return baseURL + endPoint + '&signature=' + signature.toString();
 }
 
 // Calls the API specified in finalURL and uses callback to do something with the data
 function callPTVAPI(finalURL, callback) {
-  var xhr = new XMLHttpRequest();
-  xhr.open("GET", finalURL, true);
-  xhr.onreadystatechange = function () {
-    if (xhr.readyState == 4 && xhr.status == 200) {
-            // console.log("responseText: " + xhr.responseText);
-			var responseJSON = JSON.parse(xhr.responseText);
-			if(responseJSON.values == "") {
-				console.log("No data");
-			} else {
-      	callback(xhr.responseText);
-			}
-    } 
-  }
-  xhr.send();
+    var xhr = new XMLHttpRequest();
+    
+    xhr.open("GET", finalURL, true);
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            var responseJSON = JSON.parse(xhr.responseText);
+            
+            if(responseJSON.values == "") {
+                console.log("No data");
+            } else {
+                callback(xhr.responseText);
+            }
+        }
+    }
+    xhr.send();
 }
 
 // Function to conduct a health check on the PTV callPTVAPI
 function healthCheck() {
-  var date = new Date();
-  var params = '/healthcheck?timestamp=' + date.toISOString();
-  var finalURL = getURLWithSignature(baseURL, params, devID, key);
-
-	//console.log("Doing Health Check");
-  // Call the API and provide a callback to handle the return data
-  callPTVAPI(finalURL, healthCheckCallback);
+    var date = new Date();
+    var params = '/healthcheck?timestamp=' + date.toISOString();
+    var finalURL = getURLWithSignature(baseURL, params, devID, key);
+    
+    // Call the API and provide a callback to handle the return data
+    callPTVAPI(finalURL, healthCheckCallback);
 }
 
 // Callback to handle the data returned from Health Check API
 function healthCheckCallback(data) {
-	healthCheckStatus = true;
-	var healthJSON = JSON.parse(data);
+    healthCheckStatus = true;
+    var healthJSON = JSON.parse(data);
 	
-	// If any of the helth check JSON members are false the health is not ok, i.e. false
-  for(var member in healthJSON) {
-  	if(healthJSON[member]===false) {
-			console.log(member + ": " + healthJSON[member]);
-  		healthCheckStatus = false;
-  	}
-  }
-	//console.log("Health Check: " + healthCheckStatus);
+    // If any of the health check JSON members are false the health is not ok, i.e. false
+    for(var member in healthJSON) {
+        if(healthJSON[member]===false) {
+            console.log(member + ": " + healthJSON[member]);
+            healthCheckStatus = false;
+        }
+    }
 	
 	// Handle the health check status
 	if(healthCheckStatus) {
-		// Carry on with getting PTV data
-		console.log("Getting new PTV data for " + localConfig1.modeID + " " + localConfig1.routeID + " " + localConfig1.directionID + " " + localConfig1.allStops[0].stopID);
-		specificNextDepartures(localConfig1.modeID,  localConfig1.routeID, localConfig1.allStops[0].stopID, localConfig1.directionID, localConfig1.limit);
+        // Carry on with getting PTV data
+        console.log("Getting new PTV data for " + localConfig1.modeID + " " + localConfig1.routeID + " " + localConfig1.directionID + " " + localConfig1.allStops[0].stopID);
+        specificNextDepartures(localConfig1.modeID,  localConfig1.routeID, localConfig1.allStops[0].stopID, localConfig1.directionID, localConfig1.limit);
 	} else {
 		// Return a bad health check result to the watch
 		dictionary = {
@@ -173,37 +173,33 @@ function distance(fromLat, fromLon, toLat, toLon) {
 
 // If can get location then do things
 function locationSuccess(pos) {
-  var coordinates = pos.coords;
-	console.log("Current location: " + coordinates.latitude + " " + coordinates.longitude);
-	
-	// Calculate and save the distance from current location to each stop
-	// Config string is not being returned correctly
-	var stops = localConfig1.allStops;
-	for(var i=0; i<stops.length; i++) {
-		var lat = stops[i].stopLat;
-		var lon = stops[i].stopLon;
-		stops[i].distance =  distance(coordinates.latitude, coordinates.longitude, lat, lon);
-        // console.log("Stored stop [" + stops[i].stopID + "]: " + lat + " " + lon + " " + stops[i].distance);
-	}
-	
-	// Sort the stop list based on closest distance
-	stops.sort(function(a, b){return a.distance-b.distance});
-	for(var i=0; i<stops.length; i++) {
-		var lat = stops[i].stopLat;
-		var lon = stops[i].stopLon;
-        // console.log("Stored sorted stop [" + stops[i].stopID + "]: " + lat + " " + lon + " " + stops[i].distance);
-	}
-		
-	// Get departures for this stop 
-	console.log("Nearest stop is: " + localConfig1.allStops[0].stopID + " " + localConfig1.allStops[0].distance);
-	// Check API health then either call the other APIs or send alert back to Pebble
-	healthCheck();
-	
+    var coordinates = pos.coords;
+    console.log("Current location: " + coordinates.latitude + " " + coordinates.longitude);
+    
+    // Calculate and save the distance from current location to each stop
+    // Config string is not being returned correctly
+    var stops = localConfig1.allStops;
+    for(var i=0; i<stops.length; i++) {
+        var lat = stops[i].stopLat;
+        var lon = stops[i].stopLon;
+        stops[i].distance =  distance(coordinates.latitude, coordinates.longitude, lat, lon);
+    }
+    // Sort the stop list based on closest distance
+    stops.sort(function(a, b){return a.distance-b.distance});
+    for(var i=0; i<stops.length; i++) {
+        var lat = stops[i].stopLat;
+        var lon = stops[i].stopLon;
+    }
+    
+    // Get departures for this stop 
+    console.log("Nearest stop is: " + localConfig1.allStops[0].stopID + " " + localConfig1.allStops[0].distance);
+    // Check API health then either call the other APIs or send alert back to Pebble
+    healthCheck();
 }
 
 // If cannot get location then don't send anything back. 
 function locationError(err) {
-  console.warn('location error (' + err.code + '): ' + err.message);
+    console.warn('location error (' + err.code + '): ' + err.message);
 	// Send a location timeout error message back to display default text
 	dictionary = {
 		"KEY_MSG_TYPE": 90
@@ -212,8 +208,8 @@ function locationError(err) {
 }
 
 var locationOptions = {
-  'timeout': 15000,
-  'maximumAge': 60000
+    'timeout': 15000,
+    'maximumAge': 60000
 };
 
 function getPTVData() {
@@ -243,7 +239,7 @@ function getPTVData() {
 
 // Event listeners
 Pebble.addEventListener('ready', function (e) {
-  console.log('JS connected!');
+    console.log('JS connected!');
     // localStorage.clear();
 	getPTVData();
 });
@@ -262,9 +258,9 @@ Pebble.addEventListener('showConfiguration', function() {
 
 // User has submitted the config. Store the config and call the API.
 Pebble.addEventListener('webviewclosed', function(e) {
-  if(e.response!='') {	
-	  console.log('Config uri returned: ' + e.response);
-		// First, decode the uri
+    if(e.response!='') {
+        console.log('Config uri returned: ' + e.response);
+        // First, decode the uri
 		var configString1 = decodeURIComponent(e.response);
 		
 		// Clear the local storage then save the incoming config
