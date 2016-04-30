@@ -164,6 +164,8 @@ function broadNextDeparturesCallback(data) {
         if(storedOptions) {
             selectObjDirection.value = storedOptions['directionID'];
             directionSelected(selectObjDirection.value);
+            // Clear local storage so that subsequent selections during this session don't try and reload saved options
+            localStorage.clear();
         }
 	} else {
 		allStopsTemp.pop();
@@ -235,35 +237,6 @@ function Stop(stopID, stopLat, stopLon) {
 	console.log('Stored options: ', storedOptions);	
 
     loadModes();
-
-//     if(localStorage.getItem('options')) {
-//
-//
-//         // Load all options and select the stored option.
-//         // 1. Load modes and preselect mode
-//         // 2. Load routes for mode and preselect route
-//         // 3. Load directions for route and preselect direction
-//
-//         loadModes();
-//         selectObjMode.value = storedOptions['modeID'];
-//         loadRoutes(selectObjMode.value);
-//         selectObjRoute.value = storedOptions['routeID'];
-//         loadDirections(selectObjMode.value, selectObjRoute.value);
-//         selectObjDirection.value = storedOptions['directionID'];
-//
-//         // loadOptions((localStorage.getItem('options_list_mode')), selectObjMode);
-// //         loadOptions((localStorage.getItem('options_list_route')), selectObjRoute);
-// //         loadOptions((localStorage.getItem('options_list_direction')), selectObjDirection);
-// //
-// //         selectObjRoute.value = storedOptions['routeID'];
-// //         selectObjDirection.value = storedOptions['directionID'];
-//
-//         enableSubmit();
-//     } else {
-//         // Otherwise just load the modes and the user will begin selecting
-//         loadModes();
-//     }
-	
 })();
 
 
@@ -338,25 +311,21 @@ function directionSelected(directionID) {
 
 // Runs after the submit button is pressed to grab all the selected options
 function getConfigData() {
- 	// Construct the dictionary to pass back to the watch
-  var options = {
-    'modeID': selectObjMode.options[selectObjMode.selectedIndex].value,
-	'routeID': selectObjRoute.options[selectObjRoute.selectedIndex].value,
-    'directionID': selectObjDirection.options[selectObjDirection.selectedIndex].value,
-	'allStops': allStops, 
-	'limit': 3 /* hard coded for now */
-  };
+    // Construct the dictionary to pass back to the watch
+    var options = {
+        'modeID': selectObjMode.options[selectObjMode.selectedIndex].value,
+        'routeID': selectObjRoute.options[selectObjRoute.selectedIndex].value,
+        'directionID': selectObjDirection.options[selectObjDirection.selectedIndex].value,
+        'allStops': allStops,
+        'limit': 3 /* hard coded for now */
+    };
 
     // Clear existing local storage and save for next launch
 	localStorage.clear();
 	
 	localStorage.setItem('options', JSON.stringify(options));
-	localStorage.setItem('options_list_mode', JSON.stringify(objectifyOptions(selectObjMode)));
-	localStorage.setItem('options_list_route', JSON.stringify(objectifyOptions(selectObjRoute)));
-	localStorage.setItem('options_list_direction', JSON.stringify(objectifyOptions(selectObjDirection)));
-
-  console.log('Got options: ' + JSON.stringify(options));
-  return options;
+        
+    return options;
 }
 
 function getQueryParam(variable, defaultValue) {
