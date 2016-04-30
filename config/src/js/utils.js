@@ -9,7 +9,6 @@ function enableSelector(sel) {
 
 // Enables the submit button and colours it. This runs when a stop is selected or after loading all localstorage.
 function enableSubmit() {    
-	console.log("Checking direction selection: " + selectObjDirection.value);
 	if(selectObjDirection.value==-1) {
 		disableSubmit();
 	} else {
@@ -21,7 +20,7 @@ function enableSubmit() {
 
 // Disables the submit button and greys it out.
 function disableSubmit() {    
-	console.log("Disabling Submit: " + document.getElementById("submit-button"));
+	console.log("Disabling Submit");
 	submitButton.disabled = true;
 	submitButton.style.backgroundColor = 'rgb(136, 136, 136)'; 
 }
@@ -42,7 +41,6 @@ function loadOptions(options, select) {
 		select.options[i+1] = options[i];
 	}
 
-	console.log("Loaded options: " + options);
 	// Select the 'Select' option as default
 	select.value = -1;
 	enableSelector(select);
