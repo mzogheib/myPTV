@@ -92,63 +92,62 @@ function healthCheckCallback(data) {
 
 // Callback to handle the data returned from the Specific Next Departures API
 function specificNextDeparturesCallback(data) {
-	var sndJSON = JSON.parse(data);
-	
-	// Use objects and loops for this.
-	routeShortName = sndJSON.values[0]["platform"]["direction"]["line"]["line_number"];
-	routeLongName = sndJSON.values[0]["platform"]["direction"]["direction_name"];
-	stopName = sndJSON.values[0]["platform"]["stop"]["location_name"];
-	stopName = stopName.replace("/", " / ");
-	
-	// Strip off the stop number if tram
-	/*if(sndJSON.values[0]["platform"]["stop"]["transport_type"]==="tram") {
-		stopName = stopName.substring(0, stopName.indexOf('#')-1);
-	}*/
+    var sndJSON = JSON.parse(data);
 
-	// Get the realtime departures
-	departureTime1 = sndJSON.values[0]["time_realtime_utc"];
-	departureTime2 = sndJSON.values[1]["time_realtime_utc"];
-	departureTime3 = sndJSON.values[2]["time_realtime_utc"];
-	
-	// If a realtime departure is null then revert to scheduled
-	departureTime1 = ((departureTime1==null) ? sndJSON.values[0]["time_timetable_utc"] : departureTime1);
-	departureTime2 = ((departureTime2==null) ? sndJSON.values[1]["time_timetable_utc"] : departureTime2);
-	departureTime3 = ((departureTime3==null) ? sndJSON.values[2]["time_timetable_utc"] : departureTime3);
-	
-	// Convert to local time
-	departureTime1 = new Date(departureTime1);
-	departureTime2 = new Date(departureTime2);
-	departureTime3 = new Date(departureTime3);
-	
-	//console.log(departureTime1);
-	//console.log(departureTime2);
-	//console.log(departureTime3);
-	
-	// Convert to ms sice epoch
-	departureTime1 = departureTime1.getTime()/1000;
-	departureTime2 = departureTime2.getTime()/1000;
-	departureTime3 = departureTime3.getTime()/1000;
-	
-	// Add to a dictionary for the watch
-	dictionary["KEY_ROUTE_SHORT"] = routeShortName;
-	dictionary["KEY_ROUTE_LONG"] = routeLongName;
-	dictionary["KEY_STOP"] = stopName;
-	dictionary["KEY_DEPARTURE_1"] = departureTime1;
-	dictionary["KEY_DEPARTURE_2"] = departureTime2;
-	dictionary["KEY_DEPARTURE_3"] = departureTime3;
+    // Use objects and loops for this.
+    routeShortName = sndJSON.values[0]["platform"]["direction"]["line"]["line_number"];
+    routeLongName = sndJSON.values[0]["platform"]["direction"]["direction_name"];
+    stopName = sndJSON.values[0]["platform"]["stop"]["location_name"];
+    stopName = stopName.replace("/", " / ");
 
-	console.log("Sending long route name: " + routeLongName);
-	console.log("Sending long route name in dict: " + dictionary["KEY_ROUTE_LONG"]);
-	
+    // Strip off the stop number if tram
+    // if(sndJSON.values[0]["platform"]["stop"]["transport_type"]==="tram") {
+    //     stopName = stopName.substring(0, stopName.indexOf('#')-1);
+    // }
 
-	sendDict();
+    // Get the realtime departures
+    departureTime1 = sndJSON.values[0]["time_realtime_utc"];
+    departureTime2 = sndJSON.values[1]["time_realtime_utc"];
+    departureTime3 = sndJSON.values[2]["time_realtime_utc"];
+
+    // If a realtime departure is null then revert to scheduled
+    departureTime1 = ((departureTime1==null) ? sndJSON.values[0]["time_timetable_utc"] : departureTime1);
+    departureTime2 = ((departureTime2==null) ? sndJSON.values[1]["time_timetable_utc"] : departureTime2);
+    departureTime3 = ((departureTime3==null) ? sndJSON.values[2]["time_timetable_utc"] : departureTime3);
+
+    // Convert to local time
+    departureTime1 = new Date(departureTime1);
+    departureTime2 = new Date(departureTime2);
+    departureTime3 = new Date(departureTime3);
+
+    //console.log(departureTime1);
+    //console.log(departureTime2);
+    //console.log(departureTime3);
+
+    // Convert to ms sice epoch
+    departureTime1 = departureTime1.getTime()/1000;
+    departureTime2 = departureTime2.getTime()/1000;
+    departureTime3 = departureTime3.getTime()/1000;
+
+    // Add to a dictionary for the watch
+    dictionary["KEY_ROUTE_SHORT"] = routeShortName;
+    dictionary["KEY_ROUTE_LONG"] = routeLongName;
+    dictionary["KEY_STOP"] = stopName;
+    dictionary["KEY_DEPARTURE_1"] = departureTime1;
+    dictionary["KEY_DEPARTURE_2"] = departureTime2;
+    dictionary["KEY_DEPARTURE_3"] = departureTime3;
+
+    console.log("Sending long route name: " + routeLongName);
+    console.log("Sending long route name in dict: " + dictionary["KEY_ROUTE_LONG"]);
+
+    sendDict();
 }
 
 function specificNextDepartures(mode, line, stop, direction, limit) {
-	var params = '/mode/' + mode + '/line/' + line + '/stop/' + stop + '/directionid/' + direction + '/departures/all/limit/' + limit + '?';
-	var finalURL = getURLWithSignature(baseURL, params, devID, key);
-	console.log("Specific: " + finalURL);
-	callPTVAPI(finalURL, specificNextDeparturesCallback);
+    var params = '/mode/' + mode + '/line/' + line + '/stop/' + stop + '/directionid/' + direction + '/departures/all/limit/' + limit + '?';
+    var finalURL = getURLWithSignature(baseURL, params, devID, key);
+    console.log("Specific: " + finalURL);
+    callPTVAPI(finalURL, specificNextDeparturesCallback);
 }
 
 // Distance in meters between two coordinates.
@@ -165,14 +164,14 @@ function distance(fromLat, fromLon, toLat, toLon) {
     var deltaLon = toLon - fromLon;
 		
     var angle = 2 * 
-    	Math.asin(
-    		Math.sqrt(
-	    		Math.pow(Math.sin(deltaLat/2), 2) + 
-	    		Math.cos(fromLat) * Math.cos(toLat) * 
-	    		Math.pow(Math.sin(deltaLon/2), 2)
-    		)
-    	);
-    
+        Math.asin(
+            Math.sqrt(
+                Math.pow(Math.sin(deltaLat/2), 2) + 
+                Math.cos(fromLat) * Math.cos(toLat) * 
+                Math.pow(Math.sin(deltaLon/2), 2)
+            )
+        );
+        
     return radius * angle;
 }
 
@@ -205,11 +204,11 @@ function locationSuccess(pos) {
 // If cannot get location then don't send anything back. 
 function locationError(err) {
     console.warn('location error (' + err.code + '): ' + err.message);
-	// Send a location timeout error message back to display default text
-	dictionary = {
-		"KEY_MSG_TYPE": 90
-	};
-	sendDict();
+    // Send a location timeout error message back to display default text
+    dictionary = {
+        "KEY_MSG_TYPE": 90
+    };
+    sendDict();
 }
 
 var locationOptions = {
@@ -218,40 +217,40 @@ var locationOptions = {
 };
 
 function getPTVData() {
-	// Load the config data.
-	var haveConfig = false;
-	if(Object.keys(localConfig1).length>0) {
-		// Have config from an active session
-		haveConfig = true;
-	} else if(localStorage.getItem('localConfig1')!=null) {
-		// Have locally stored config
-		console.log("Will parse: " + localStorage.getItem('localConfig1'));
-		localConfig1 = JSON.parse(localStorage.getItem('localConfig1'));
-		console.log("Stored config string is: " + localConfig1);
-		haveConfig = true;
-	} else {
-		// Don't have any config. Keep false
-	}
-	
-	// Check for stored config data
-	if(haveConfig) {
-		// Find the current position. Get the closest stop and departures within the locationSuccess callback
-		window.navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
-	} else {
-		console.log("No local storage");
-	}
+    // Load the config data.
+    var haveConfig = false;
+    if(Object.keys(localConfig1).length>0) {
+    	// Have config from an active session
+    	haveConfig = true;
+    } else if(localStorage.getItem('localConfig1')!=null) {
+    	// Have locally stored config
+    	console.log("Will parse: " + localStorage.getItem('localConfig1'));
+    	localConfig1 = JSON.parse(localStorage.getItem('localConfig1'));
+    	console.log("Stored config string is: " + localConfig1);
+    	haveConfig = true;
+    } else {
+    	// Don't have any config. Keep false
+    }
+
+    // Check for stored config data
+    if(haveConfig) {
+    	// Find the current position. Get the closest stop and departures within the locationSuccess callback
+    	window.navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
+    } else {
+    	console.log("No local storage");
+    }
 }
 
 // Event listeners
 Pebble.addEventListener('ready', function (e) {
     console.log('JS connected!');
     // localStorage.clear();
-	getPTVData();
+    getPTVData();
 });
 
 // Message from the watch to get the PT data from the API
 Pebble.addEventListener('appmessage', function (e) {
-	getPTVData()
+    getPTVData()
 });
 
 // User has launched the config page
@@ -266,18 +265,18 @@ Pebble.addEventListener('webviewclosed', function(e) {
     if(e.response!='') {
         console.log('Config uri returned: ' + e.response);
         // First, decode the uri
-		var configString1 = decodeURIComponent(e.response);
-		
-		// Clear the local storage then save the incoming config
+        var configString1 = decodeURIComponent(e.response);
+
+        // Clear the local storage then save the incoming config
         localStorage.clear();
-		localStorage.setItem('localConfig1', configString1);
-		
-		// Then, parse the string into an object
-		localConfig1 = JSON.parse(configString1);
-		
-		// Get and send the PTV data
-		getPTVData();
-	} else {
-		console.log("Config cancelled");
-	}
+        localStorage.setItem('localConfig1', configString1);
+
+        // Then, parse the string into an object
+        localConfig1 = JSON.parse(configString1);
+        
+        // Get and send the PTV data
+        getPTVData();
+    } else {
+        console.log("Config cancelled");
+    }
 });
