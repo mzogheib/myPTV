@@ -75,19 +75,19 @@ function healthCheckCallback(data) {
             healthCheckStatus = false;
         }
     }
-	
-	// Handle the health check status
-	if(healthCheckStatus) {
+    
+    // Handle the health check status
+    if(healthCheckStatus) {
         // Carry on with getting PTV data
         console.log("Getting new PTV data for " + localConfig1.modeID + " " + localConfig1.routeID + " " + localConfig1.directionID + " " + localConfig1.allStops[0].stopID);
         specificNextDepartures(localConfig1.modeID,  localConfig1.routeID, localConfig1.allStops[0].stopID, localConfig1.directionID, localConfig1.limit);
-	} else {
-		// Return a bad health check result to the watch
-		dictionary = {
-			"KEY_HEALTH": healthCheckStatus
-		};
-		sendDict();
-	}
+    } else {
+        // Return a bad health check result to the watch
+        dictionary = {
+            "KEY_HEALTH": healthCheckStatus
+        };
+        sendDict();
+    }
 }
 
 // Callback to handle the data returned from the Specific Next Departures API
@@ -105,8 +105,7 @@ function specificNextDeparturesCallback(data) {
 		stopName = stopName.substring(0, stopName.indexOf('#')-1);
 	}*/
 
-		
-  // Get the realtime departures
+	// Get the realtime departures
 	departureTime1 = sndJSON.values[0]["time_realtime_utc"];
 	departureTime2 = sndJSON.values[1]["time_realtime_utc"];
 	departureTime3 = sndJSON.values[2]["time_realtime_utc"];
@@ -156,18 +155,24 @@ function specificNextDepartures(mode, line, stop, direction, limit) {
 // Adapted from http://stackoverflow.com/questions/5396286/sort-list-of-lon-lat-points-start-with-nearest
 function distance(fromLat, fromLon, toLat, toLon) {
     var radius = 6378137;   // approximate Earth radius, *in meters*
+
     fromLat *= (Math.PI / 180);
-		fromLon *= (Math.PI / 180);
-		toLat *= (Math.PI / 180);
-		toLon *= (Math.PI / 180);
+    fromLon *= (Math.PI / 180);
+    toLat *= (Math.PI / 180);
+    toLon *= (Math.PI / 180);
     
     var deltaLat = toLat - fromLat;
     var deltaLon = toLon - fromLon;
 		
-    var angle = 2 * Math.asin( Math.sqrt(
-        Math.pow(Math.sin(deltaLat/2), 2) + 
-        Math.cos(fromLat) * Math.cos(toLat) * 
-        Math.pow(Math.sin(deltaLon/2), 2) ) );
+    var angle = 2 * 
+    	Math.asin(
+    		Math.sqrt(
+	    		Math.pow(Math.sin(deltaLat/2), 2) + 
+	    		Math.cos(fromLat) * Math.cos(toLat) * 
+	    		Math.pow(Math.sin(deltaLon/2), 2)
+    		)
+    	);
+    
     return radius * angle;
 }
 
@@ -231,7 +236,7 @@ function getPTVData() {
 	// Check for stored config data
 	if(haveConfig) {
 		// Find the current position. Get the closest stop and departures within the locationSuccess callback
-	  window.navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
+		window.navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
 	} else {
 		console.log("No local storage");
 	}
