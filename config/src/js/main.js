@@ -32,6 +32,7 @@ function healthCheck() {
             for(var member in healthCheck) {
                 console.log(member + ": " + healthCheck[member]);
                 if(healthCheck[member] === false) {
+                    // Setting this to true because for some reason the securityToken is always returning false, even though the devID and key works.
                     healthCheckStatus = true;
                 }
             }
