@@ -46,33 +46,27 @@ function loadOptions(options, select) {
 	enableSelector(select);
 }
 
-// Takes the options from a select object and creates an object out of them
-function objectifyOptions(select) {
-	var opts = select.getElementsByTagName('option');
-	var len = opts.length;
-	
-	var optionsObj = {};
-	var optionValue, optionText;
-	
-	// Start at the second option since the first (0) is 'Select'
-	for(var i = 1; i<len; i++) {
-		console.log(opts[i]);
-		optionValue = opts[i].value;
-		optionText = opts[i].text;
-		optionsObj[optionValue] = optionText;
-	}
-	
-	return optionsObj;
-}
-
 // Gets what ever is at that URL
-function xhr(finalURL, callback) {
-    var xhr = new XMLHttpRequest();
-    xhr.open("GET", finalURL, true);
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState == 4 && xhr.status == 200) {
-            callback(xhr.responseText);
-        }
-    }
-    xhr.send();
+function xhr(finalURL) {
+    return new Promise(function (resolve, reject) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", finalURL);
+        xhr.onload = function () {
+            if (this.status >= 200 && this.status < 300) {
+                resolve(JSON.parse(xhr.response));
+            } else {
+                reject({
+                    status: this.status,
+                    statusText: xhr.statusText
+                });
+            }
+        };
+        xhr.onerror = function () {
+            reject({
+                status: this.status,
+                statusText: xhr.statusText
+            });
+        };
+        xhr.send();
+    });
 }
