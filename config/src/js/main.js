@@ -119,6 +119,8 @@ function getDirectionsAtStop(modeID, routeID, stops, stopToCheck, directions) {
             if(storedOptions) {
                 selectObjDirection.value = storedOptions['directionID'];
                 directionSelected(selectObjDirection.value);
+                // Any subsequent changes to the Selects should not try to preselect lower levels again
+                storedOptions = false;
             }
         }
     })
