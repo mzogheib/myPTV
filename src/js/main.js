@@ -224,6 +224,7 @@ function getPTVData() {
     var haveConfig = false;
     if(Object.keys(localConfig1).length>0) {
     	// Have config from an active session
+        console.log("Config from active session " + localConfig1);
     	haveConfig = true;
     } else if(localStorage.getItem('localConfig1')!=null) {
     	// Have locally stored config
@@ -259,8 +260,14 @@ Pebble.addEventListener('appmessage', function (e) {
 // User has launched the config page
 Pebble.addEventListener('showConfiguration', function() {
     console.log('Showing configuration page: ' + configURL);
+    
+    var params;
+    
+    if(Object.keys(localConfig1).length>0) {
+        params = '?mode=' + localConfig1.modeID + '&route=' + localConfig1.routeID + '&direction=' + localConfig1.directionID;
+    }
 
-    Pebble.openURL(configURL);
+    Pebble.openURL(configURL + params);
 });
 
 // User has submitted the config. Store the config and call the API.

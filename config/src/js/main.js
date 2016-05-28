@@ -4,7 +4,7 @@ var selectObjRoute = document.getElementById('select-route-id');
 var selectObjDirection = document.getElementById('select-direction-id');
 var submitButton = document.getElementById('submit-button');
 
-var storedOptions;
+var storedOptions = {};
 var allStops = [];
 
 /* 
@@ -158,14 +158,23 @@ function Stop(stopID, stopLat, stopLon) {
 (function() {
     // Disable the submit button until all options have been selected
     disableSubmit();
-    // localStorage.clear();
+    
+    var queryDict = {};
+    location.search.substr(1).split("&").forEach(function(item) {
+        queryDict[item.split("=")[0]] = item.split("=")[1]
+    });
+    
+    console.log(queryDict);
     
     // Do a health check. 
     healthCheck()
     .then(function () {
         console.log("ok!");
-        // Load any previously saved configuration, if available		
-        storedOptions = JSON.parse(localStorage.getItem('options'));
+        // Prepare the config		
+        storedOptions['modeID'] = queryDict['mode'];
+        storedOptions['routeID'] = queryDict['route'];
+        storedOptions['directionID'] = queryDict['direction'];
+        
         console.log('Stored options: ', storedOptions);
     
         loadModes();
@@ -283,10 +292,6 @@ function getConfigData() {
         'allStops': allStops,
         'limit': 3 /* hard coded for now */
     };
-
-    // Clear existing local storage and save new config for next launch
-    localStorage.clear();
-    localStorage.setItem('options', JSON.stringify(options));
         
     return options;
 }
@@ -302,7 +307,7 @@ function getQueryParam(variable, defaultValue) {
             return decodeURIComponent(pair[1]);
         }
     }
-    
+        
     return defaultValue || false;
 }
 
