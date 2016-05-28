@@ -9,7 +9,7 @@ var stopDistances1 = [];
 var dictionary = {};
 var healthCheckStatus = true;
 var routeShortName, routeLongName;
-var stopName;
+var stopIndex, stopName;
 var directionName1, directionName2;
 var departureTime1, departureTime2, departureTime3;
 
@@ -40,14 +40,8 @@ function callPTVAPI(finalURL, callback) {
     
     xhr.open("GET", finalURL, true);
     xhr.onreadystatechange = function () {
-        if (xhr.readyState == 4 && xhr.status == 200) {
-            var responseJSON = JSON.parse(xhr.responseText);
-            
-            if(responseJSON.values == "") {
-                console.log("No data");
-            } else {
-                callback(xhr.responseText);
-            }
+        if (xhr.readyState == 4 && xhr.status == 200) {            
+            callback(xhr.responseText);
         }
     }
     xhr.send();
@@ -79,8 +73,7 @@ function healthCheckCallback(data) {
     // Handle the health check status
     if(healthCheckStatus) {
         // Carry on with getting PTV data
-        console.log("Getting new PTV data for " + localConfig1.modeID + " " + localConfig1.routeID + " " + localConfig1.directionID + " " + localConfig1.allStops[0].stopID);
-        specificNextDepartures(localConfig1.modeID,  localConfig1.routeID, localConfig1.allStops[0].stopID, localConfig1.directionID, localConfig1.limit);
+        specificNextDepartures(localConfig1.modeID,  localConfig1.routeID, localConfig1.allStops[stopIndex].stopID, localConfig1.directionID, localConfig1.limit);
     } else {
         // Return a bad health check result to the watch
         dictionary = {
@@ -93,60 +86,68 @@ function healthCheckCallback(data) {
 // Callback to handle the data returned from the Specific Next Departures API
 function specificNextDeparturesCallback(data) {
     var sndJSON = JSON.parse(data);
+    
+    if(sndJSON.values == '' && ++stopIndex < localConfig1.allStops.length) {
+        // Nothing at this stop. Try the next closest.
+        specificNextDepartures(localConfig1.modeID,  localConfig1.routeID, localConfig1.allStops[stopIndex].stopID, localConfig1.directionID, localConfig1.limit);
+    } else {
+        // Found departures. Send to watch.
+    
+        // Use objects and loops for this.
+        routeShortName = sndJSON.values[0]["platform"]["direction"]["line"]["line_number"];
+        routeLongName = sndJSON.values[0]["platform"]["direction"]["direction_name"];
+        stopName = sndJSON.values[0]["platform"]["stop"]["location_name"];
+        stopName = stopName.replace("/", " / ");
 
-    // Use objects and loops for this.
-    routeShortName = sndJSON.values[0]["platform"]["direction"]["line"]["line_number"];
-    routeLongName = sndJSON.values[0]["platform"]["direction"]["direction_name"];
-    stopName = sndJSON.values[0]["platform"]["stop"]["location_name"];
-    stopName = stopName.replace("/", " / ");
+        // Strip off the stop number if tram
+        // if(sndJSON.values[0]["platform"]["stop"]["transport_type"]==="tram") {
+        //     stopName = stopName.substring(0, stopName.indexOf('#')-1);
+        // }
 
-    // Strip off the stop number if tram
-    // if(sndJSON.values[0]["platform"]["stop"]["transport_type"]==="tram") {
-    //     stopName = stopName.substring(0, stopName.indexOf('#')-1);
-    // }
+        // Get the realtime departures
+        departureTime1 = sndJSON.values[0]["time_realtime_utc"];
+        departureTime2 = sndJSON.values[1]["time_realtime_utc"];
+        departureTime3 = sndJSON.values[2]["time_realtime_utc"];
 
-    // Get the realtime departures
-    departureTime1 = sndJSON.values[0]["time_realtime_utc"];
-    departureTime2 = sndJSON.values[1]["time_realtime_utc"];
-    departureTime3 = sndJSON.values[2]["time_realtime_utc"];
+        // If a realtime departure is null then revert to scheduled
+        departureTime1 = ((departureTime1==null) ? sndJSON.values[0]["time_timetable_utc"] : departureTime1);
+        departureTime2 = ((departureTime2==null) ? sndJSON.values[1]["time_timetable_utc"] : departureTime2);
+        departureTime3 = ((departureTime3==null) ? sndJSON.values[2]["time_timetable_utc"] : departureTime3);
 
-    // If a realtime departure is null then revert to scheduled
-    departureTime1 = ((departureTime1==null) ? sndJSON.values[0]["time_timetable_utc"] : departureTime1);
-    departureTime2 = ((departureTime2==null) ? sndJSON.values[1]["time_timetable_utc"] : departureTime2);
-    departureTime3 = ((departureTime3==null) ? sndJSON.values[2]["time_timetable_utc"] : departureTime3);
+        // Convert to local time
+        departureTime1 = new Date(departureTime1);
+        departureTime2 = new Date(departureTime2);
+        departureTime3 = new Date(departureTime3);
 
-    // Convert to local time
-    departureTime1 = new Date(departureTime1);
-    departureTime2 = new Date(departureTime2);
-    departureTime3 = new Date(departureTime3);
+        //console.log(departureTime1);
+        //console.log(departureTime2);
+        //console.log(departureTime3);
 
-    //console.log(departureTime1);
-    //console.log(departureTime2);
-    //console.log(departureTime3);
+        // Convert to ms sice epoch
+        departureTime1 = departureTime1.getTime()/1000;
+        departureTime2 = departureTime2.getTime()/1000;
+        departureTime3 = departureTime3.getTime()/1000;
 
-    // Convert to ms sice epoch
-    departureTime1 = departureTime1.getTime()/1000;
-    departureTime2 = departureTime2.getTime()/1000;
-    departureTime3 = departureTime3.getTime()/1000;
+        // Add to a dictionary for the watch
+        dictionary["KEY_ROUTE_SHORT"] = routeShortName;
+        dictionary["KEY_ROUTE_LONG"] = routeLongName;
+        dictionary["KEY_STOP"] = stopName;
+        dictionary["KEY_DEPARTURE_1"] = departureTime1;
+        dictionary["KEY_DEPARTURE_2"] = departureTime2;
+        dictionary["KEY_DEPARTURE_3"] = departureTime3;
 
-    // Add to a dictionary for the watch
-    dictionary["KEY_ROUTE_SHORT"] = routeShortName;
-    dictionary["KEY_ROUTE_LONG"] = routeLongName;
-    dictionary["KEY_STOP"] = stopName;
-    dictionary["KEY_DEPARTURE_1"] = departureTime1;
-    dictionary["KEY_DEPARTURE_2"] = departureTime2;
-    dictionary["KEY_DEPARTURE_3"] = departureTime3;
+        console.log("Sending long route name: " + routeLongName);
+        console.log("Sending long route name in dict: " + dictionary["KEY_ROUTE_LONG"]);
 
-    console.log("Sending long route name: " + routeLongName);
-    console.log("Sending long route name in dict: " + dictionary["KEY_ROUTE_LONG"]);
-
-    sendDict();
+        sendDict();
+    }
 }
 
 function specificNextDepartures(mode, line, stop, direction, limit) {
     var params = '/mode/' + mode + '/line/' + line + '/stop/' + stop + '/directionid/' + direction + '/departures/all/limit/' + limit + '?';
     var finalURL = getURLWithSignature(baseURL, params, devID, key);
-    console.log("Specific: " + finalURL);
+    console.log("Getting specific next departures for " + mode + " " + line + " " + direction + " " + stop);
+    console.log("URL: " + finalURL);
     callPTVAPI(finalURL, specificNextDeparturesCallback);
 }
 
@@ -195,8 +196,10 @@ function locationSuccess(pos) {
         var lon = stops[i].stopLon;
     }
     
+    stopIndex = 0;
+    
     // Get departures for this stop 
-    console.log("Nearest stop is: " + localConfig1.allStops[0].stopID + " " + localConfig1.allStops[0].distance);
+    console.log("Nearest stop is: " + localConfig1.allStops[stopIndex].stopID + " " + localConfig1.allStops[stopIndex].distance);
     // Check API health then either call the other APIs or send alert back to Pebble
     healthCheck();
 }
