@@ -73,7 +73,8 @@ function healthCheckCallback(data) {
     // Handle the health check status
     if(healthCheckStatus) {
         // Carry on with getting PTV data
-        specificNextDepartures(localConfig1.modeID,  localConfig1.routeID, localConfig1.allStops[stopIndex].stopID, localConfig1.directionID, localConfig1.limit);
+        var d = localStorage['direction']; 
+        specificNextDepartures(localConfig1.modeID,  localConfig1.routeID, localConfig1.allStops[stopIndex].stopID, localConfig1.directionID[d], localConfig1.limit);
     } else {
         // Return a bad health check result to the watch
         dictionary = {
@@ -89,7 +90,8 @@ function specificNextDeparturesCallback(data) {
     
     if(sndJSON.values == '' && ++stopIndex < localConfig1.allStops.length) {
         // Nothing at this stop. Try the next closest.
-        specificNextDepartures(localConfig1.modeID,  localConfig1.routeID, localConfig1.allStops[stopIndex].stopID, localConfig1.directionID, localConfig1.limit);
+        var d = localStorage['direction']; 
+        specificNextDepartures(localConfig1.modeID,  localConfig1.routeID, localConfig1.allStops[stopIndex].stopID, localConfig1.directionID[d], localConfig1.limit);
     } else {
         // Found departures. Send to watch.
     
@@ -254,6 +256,12 @@ Pebble.addEventListener('ready', function (e) {
 
 // Message from the watch to get the PT data from the API
 Pebble.addEventListener('appmessage', function (e) {
+    // Toggle the direction for the next request
+    var numDirections = localStorage['numDirections'];
+    var d = localStorage['direction']; 
+    d = (numDirections - 1) - d;
+    localStorage.setItem('direction', d);
+    
     getPTVData()
 });
 
@@ -273,7 +281,7 @@ Pebble.addEventListener('showConfiguration', function() {
 // User has submitted the config. Store the config and call the API.
 Pebble.addEventListener('webviewclosed', function(e) {
     if(e.response!='') {
-        console.log('Config uri returned: ' + e.response);
+        // console.log('Config uri returned: ' + e.response);
         // First, decode the uri
         var configString1 = decodeURIComponent(e.response);
 
@@ -283,6 +291,12 @@ Pebble.addEventListener('webviewclosed', function(e) {
 
         // Then, parse the string into an object
         localConfig1 = JSON.parse(configString1);
+        console.log(localConfig1);
+        
+        // Also save the total number of directions to toggle. Start off with 0
+        localStorage.setItem('numDirections', localConfig1.directionID.length);
+        localStorage.setItem('direction', 0);
+        console.log('Length of directions: ' + localStorage['numDirections']);
         
         // Get and send the PTV data
         getPTVData();

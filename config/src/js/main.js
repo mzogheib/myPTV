@@ -273,6 +273,13 @@ function loadDirections(modeID, routeID) {
 // Direction has just been chosen, check if Submit should be enabled
 function directionSelected(directionID) {
     console.log('Direction is: ' + directionID);
+    console.log('Directions are: ' + selectObjDirection.options[1].value + ' ' + selectObjDirection.options[2].value)
+    
+    var directions = [];
+    directions.push(selectObjDirection.options[1].value);
+    directions.push(selectObjDirection.options[2].value);
+    
+    console.log(directions);
     
     directionID == -1 ? disableSubmit() : enableSubmit();
 }
@@ -280,10 +287,14 @@ function directionSelected(directionID) {
 // Runs after the submit button is pressed to grab all the selected options
 function getConfigData() {
     // Construct the dictionary to pass back to the watch
+    var directions = [];
+    directions.push(selectObjDirection.options[1].value);
+    directions.push(selectObjDirection.options[2].value);
+
     var options = {
         'modeID': selectObjMode.options[selectObjMode.selectedIndex].value,
         'routeID': selectObjRoute.options[selectObjRoute.selectedIndex].value,
-        'directionID': selectObjDirection.options[selectObjDirection.selectedIndex].value,
+        'directionID': directions,
         'allStops': allStops,
         'limit': 3 /* hard coded for now */
     };
