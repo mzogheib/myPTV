@@ -116,8 +116,8 @@ function getDirectionsAtStop(modeID, routeID, stops, stopToCheck, directions) {
 
             loadOptions(options, selectObjDirection);
             // If there is a stored route selection then preselect it and load its directions
-            if(storedOptions) {
-                selectObjDirection.value = storedOptions['directionID'];
+            if(storedOptions['direction']) {
+                selectObjDirection.value = storedOptions['direction'];
                 directionSelected(selectObjDirection.value);
                 // Any subsequent changes to the Selects should not try to preselect lower levels again
                 storedOptions = false;
@@ -159,24 +159,17 @@ function Stop(stopID, stopLat, stopLon) {
     // Disable the submit button until all options have been selected
     disableSubmit();
     
-    var queryDict = {};
+    // Pull in any saved config
     location.search.substr(1).split("&").forEach(function(item) {
-        queryDict[item.split("=")[0]] = item.split("=")[1]
+        storedOptions[item.split("=")[0]] = item.split("=")[1]
     });
     
-    console.log(queryDict);
+    console.log(storedOptions);
     
-    // Do a health check. 
+    // Do a health check. Then begin loading the selects.
     healthCheck()
     .then(function () {
-        console.log("ok!");
-        // Prepare the config		
-        storedOptions['modeID'] = queryDict['mode'];
-        storedOptions['routeID'] = queryDict['route'];
-        storedOptions['directionID'] = queryDict['direction'];
-        
-        console.log('Stored options: ', storedOptions);
-    
+        console.log("ok!");    
         loadModes();
     })
     .catch(function (error) {
@@ -201,8 +194,8 @@ function loadModes() {
     loadOptions(options, selectObjMode);
     
     // If there is a stored mode selection then preselect it and load its routes
-    if(storedOptions) {
-        selectObjMode.value = storedOptions['modeID'];
+    if(storedOptions['mode']) {
+        selectObjMode.value = storedOptions['mode'];
         loadRoutes(selectObjMode.value);
     }
     
@@ -233,8 +226,8 @@ function loadRoutes(modeID) {
         })
         .then(function() {
             // If there is a stored route selection then preselect it and load its directions
-            if(storedOptions) {
-                selectObjRoute.value = storedOptions['routeID'];
+            if(storedOptions['route']) {
+                selectObjRoute.value = storedOptions['route'];
                 loadDirections(selectObjMode.value, selectObjRoute.value);
             } else {
                 resetOptions(selectObjDirection);
@@ -262,8 +255,10 @@ function loadDirections(modeID, routeID) {
             var stopToCheck = 0;
             var directions = [];
 
+            // Determine the directions on this route
             getDirectionsAtStop(modeID, routeID, stops, stopToCheck, directions);
             
+            // In parallel, save all of the stops on this route
             allStops = [];
             for(var i = 0; i < stops.length; i++) {
                 allStops.push(new Stop(stops[i].stop_id, stops[i].lat, stops[i].lon));

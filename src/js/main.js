@@ -261,7 +261,7 @@ Pebble.addEventListener('appmessage', function (e) {
 Pebble.addEventListener('showConfiguration', function() {
     console.log('Showing configuration page: ' + configURL);
     
-    var params;
+    var params = '';
     
     if(Object.keys(localConfig1).length>0) {
         params = '?mode=' + localConfig1.modeID + '&route=' + localConfig1.routeID + '&direction=' + localConfig1.directionID;
