@@ -14,18 +14,12 @@
   ],
   "appKeys": {
 		"KEY_MSG_TYPE": 0,
-		"GET_PT_DATA": 1,
 		"KEY_ROUTE_SHORT": 10,
 		"KEY_ROUTE_LONG": 11,
 		"KEY_STOP": 12,
 		"KEY_DEPARTURE_1": 14,
 		"KEY_DEPARTURE_2": 15,
 		"KEY_DEPARTURE_3": 16,
-		"GET_USER_OPT": 2,
-		"KEY_MODE_ID": 20,
-		"KEY_ROUTE_ID": 21,
-		"KEY_DIRECTION_ID": 22,
-		"KEY_STOP_ID": 23,
 		"KEY_HEALTH":	80
   },
 	"resources": {

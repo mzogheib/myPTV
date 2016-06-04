@@ -41,18 +41,13 @@
 #define KEY_MSG_TYPE 0
   
 #define GET_PT_DATA 1
+#define GET_NEXT_DIR 2
 #define KEY_ROUTE_SHORT 10
 #define KEY_ROUTE_LONG 11
 #define KEY_STOP 12
 #define KEY_DEPARTURE_1 14
 #define KEY_DEPARTURE_2 15
 #define KEY_DEPARTURE_3 16
-
-#define GET_USER_OPT 2
-#define KEY_MODE_ID 20
-#define KEY_ROUTE_ID 21
-#define KEY_DIRECTION_ID 22
-#define KEY_STOP_ID 23
 
 #define GET_HEALTH 8
 #define KEY_HEALTH 80
@@ -93,12 +88,12 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
     // Request new PT times
-    sendDict(GET_PT_DATA);
+    sendDict(GET_NEXT_DIR);
 }
 
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
     // Request new PT times
-    sendDict(GET_PT_DATA);
+    sendDict(GET_NEXT_DIR);
 }
 
 static void click_config_provider(void *context) {
@@ -241,14 +236,14 @@ static void display_pt_times() {
 }
 
 // Send dict to phone and do something
-static void sendDict(int msg_type) {
+static void sendDict(int msg) {
     DictionaryIterator *dict;
 	
     // Begin dictionary
     app_message_outbox_begin(&dict);
 	
     // Add a key-value pair for each parameter
-    dict_write_int8(dict, KEY_MSG_TYPE, GET_PT_DATA);
+    dict_write_int8(dict, KEY_MSG_TYPE, msg);
   
     // Send the message!
     app_message_outbox_send();

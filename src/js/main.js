@@ -245,12 +245,15 @@ Pebble.addEventListener('ready', function (e) {
 
 // Message from the watch to get the PT data from the API
 Pebble.addEventListener('appmessage', function (e) {
-    console.log('App message received!');
-    // Toggle the direction for the next request
-    var numDirections = localStorage['numDirections'];
-    var d = localStorage['direction']; 
-    d = (numDirections - 1) - d;
-    localStorage.setItem('direction', d);
+    console.log('App message received! ');
+    
+    if(e.payload["KEY_MSG_TYPE"] == 2 ) {
+        // Toggle the direction for the next request
+        var numDirections = localStorage['numDirections'];
+        var d = localStorage['direction']; 
+        d = (numDirections - 1) - d;
+        localStorage.setItem('direction', d);
+    }
     
     getPTVData()
 });
