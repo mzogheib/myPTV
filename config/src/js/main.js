@@ -1,11 +1,11 @@
 /* Global Variables */
 var selectObjMode = document.getElementById('select-mode-id');
 var selectObjRoute = document.getElementById('select-route-id');
-var selectObjDirection = document.getElementById('select-direction-id');
 var submitButton = document.getElementById('submit-button');
 
 var storedOptions = {};
 var allStops = [];
+var directions = [];
 
 /* 
 ** PTV API specific functions 
@@ -92,36 +92,25 @@ function parseLinesByMode(routes) {
 
 // Check the departure directions at each stop until two directions are found
 // or all stops have been exhausted. Assumes no more than two directions.
-function getDirectionsAtStop(modeID, routeID, stops, stopToCheck, directions) {
+function getDirectionsAtStop(modeID, routeID, stops, stopToCheck) {
     xhr(broadNextDeparturesURL(modeID, stops[stopToCheck].stop_id, 3))
     .then(function (bnd) {
         for(var i = 0; i < bnd.values.length; i++) {
             if(bnd.values[i].platform.direction.line.line_id == routeID) {
                 var id = bnd.values[i].platform.direction.direction_id;
-                var name = bnd.values[i].platform.direction.direction_name;
-                directions[id] = new Option(name, id);
+                if(directions.indexOf(id) == -1) directions.push(id);
             }
         }
         
         stopToCheck++;
-        if(Object.keys(directions).length < 2 && stopToCheck < stops.length) {
+        if(directions.length < 2 && stopToCheck < stops.length) {
             // Keep searching
-            getDirectionsAtStop(modeID, routeID, stops, stopToCheck, directions);
+            getDirectionsAtStop(modeID, routeID, stops, stopToCheck);
         } else {
             // Directions found
-            var options = [];
-            for(var dir in directions) {
-                options.push(directions[dir]);
-            }
-
-            loadOptions(options, selectObjDirection);
-            // If there is a stored route selection then preselect it and load its directions
-            if(storedOptions['direction']) {
-                selectObjDirection.value = storedOptions['direction'];
-                directionSelected(selectObjDirection.value);
-                // Any subsequent changes to the Selects should not try to preselect lower levels again
-                storedOptions = false;
-            }
+            // Any subsequent changes to the Selects should not try to preselect lower levels again
+            storedOptions = false;
+            enableSubmit();
         }
     })
     .catch(function () {
@@ -193,26 +182,20 @@ function loadModes() {
     // Load the mode options into the selector
     loadOptions(options, selectObjMode);
     
+    // Reset routes selector
+    resetOptions(selectObjRoute);
+    disableSelector(selectObjRoute);
+    
     // If there is a stored mode selection then preselect it and load its routes
     if(storedOptions['mode']) {
         selectObjMode.value = storedOptions['mode'];
         loadRoutes(selectObjMode.value);
     }
-    
-    // Reset routes & directions selectors
-    resetOptions(selectObjRoute);
-    resetOptions(selectObjDirection);
-    disableSelector(selectObjRoute);
-    disableSelector(selectObjDirection);	
 }
 
 // Get the list of routes for this mode and populate. Called when a mode is selected.
 function loadRoutes(modeID) {
     disableSubmit();
-    resetOptions(selectObjRoute);
-    resetOptions(selectObjDirection);
-    disableSelector(selectObjRoute);
-    disableSelector(selectObjDirection);
     
     // If a mode other than 'Select' was selected then load its routes
     if(modeID != -1) {
@@ -229,9 +212,7 @@ function loadRoutes(modeID) {
             if(storedOptions['route']) {
                 selectObjRoute.value = storedOptions['route'];
                 loadDirections(selectObjMode.value, selectObjRoute.value);
-            } else {
-                resetOptions(selectObjDirection);
-            }
+            } 
         })
         .catch(function () {
             console.log("Could not load routes");
@@ -242,8 +223,6 @@ function loadRoutes(modeID) {
 // Get the list of directions for this mode and route and populate. Called when a route is selected.
 function loadDirections(modeID, routeID) {
     disableSubmit();
-    resetOptions(selectObjDirection);
-    disableSelector(selectObjDirection);
     
     // If a route other than 'Select' was selected then load its directions
     if(routeID != -1) {
@@ -253,10 +232,10 @@ function loadDirections(modeID, routeID) {
         xhr(stopsOnALineURL(modeID, routeID))
         .then(function (stops) {
             var stopToCheck = 0;
-            var directions = [];
+            directions = [];
 
             // Determine the directions on this route
-            getDirectionsAtStop(modeID, routeID, stops, stopToCheck, directions);
+            getDirectionsAtStop(modeID, routeID, stops, stopToCheck);
             
             // In parallel, save all of the stops on this route
             allStops = [];
@@ -270,20 +249,13 @@ function loadDirections(modeID, routeID) {
     }
 }
 
-// Direction has just been chosen, check if Submit should be enabled
-function directionSelected(directionID) {
-    console.log('Direction is: ' + directionID);
-    
-    directionID == -1 ? disableSubmit() : enableSubmit();
-}
-
 // Runs after the submit button is pressed to grab all the selected options
 function getConfigData() {
     // Construct the dictionary to pass back to the watch
     var options = {
         'modeID': selectObjMode.options[selectObjMode.selectedIndex].value,
         'routeID': selectObjRoute.options[selectObjRoute.selectedIndex].value,
-        'directionID': selectObjDirection.options[selectObjDirection.selectedIndex].value,
+        'directionID': directions,
         'allStops': allStops,
         'limit': 3 /* hard coded for now */
     };
