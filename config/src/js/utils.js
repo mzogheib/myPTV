@@ -9,7 +9,7 @@ function enableSelector(sel) {
 
 // Enables the submit button and colours it. This runs when a stop is selected or after loading all localstorage.
 function enableSubmit() {    
-	if(selectObjDirection.value==-1) {
+	if(selectObjRoute.value==-1) {
 		disableSubmit();
 	} else {
 		console.log("Enabling Submit");

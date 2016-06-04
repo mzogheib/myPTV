@@ -260,7 +260,7 @@ Pebble.addEventListener('showConfiguration', function() {
     var params = '';
     
     if(Object.keys(localConfig1).length>0) {
-        params = '?mode=' + localConfig1.modeID + '&route=' + localConfig1.routeID + '&direction=' + localConfig1.directionID;
+        params = '?mode=' + localConfig1.modeID + '&route=' + localConfig1.routeID;
     }
 
     Pebble.openURL(configURL + params);
