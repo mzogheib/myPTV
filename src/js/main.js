@@ -138,9 +138,6 @@ function specificNextDeparturesCallback(data) {
         dictionary["KEY_DEPARTURE_2"] = departureTime2;
         dictionary["KEY_DEPARTURE_3"] = departureTime3;
 
-        console.log("Sending long route name: " + routeLongName);
-        console.log("Sending long route name in dict: " + dictionary["KEY_ROUTE_LONG"]);
-
         sendDict();
     }
 }
@@ -148,8 +145,6 @@ function specificNextDeparturesCallback(data) {
 function specificNextDepartures(mode, line, stop, direction, limit) {
     var params = '/mode/' + mode + '/line/' + line + '/stop/' + stop + '/directionid/' + direction + '/departures/all/limit/' + limit + '?';
     var finalURL = getURLWithSignature(baseURL, params, devID, key);
-    console.log("Getting specific next departures for " + mode + " " + line + " " + direction + " " + stop);
-    console.log("URL: " + finalURL);
     callPTVAPI(finalURL, specificNextDeparturesCallback);
 }
 
@@ -181,7 +176,6 @@ function distance(fromLat, fromLon, toLat, toLon) {
 // If can get location then do things
 function locationSuccess(pos) {
     var coordinates = pos.coords;
-    console.log("Current location: " + coordinates.latitude + " " + coordinates.longitude);
     
     // Calculate and save the distance from current location to each stop
     // Config string is not being returned correctly
@@ -201,7 +195,6 @@ function locationSuccess(pos) {
     stopIndex = 0;
     
     // Get departures for this stop 
-    console.log("Nearest stop is: " + localConfig1.allStops[stopIndex].stopID + " " + localConfig1.allStops[stopIndex].distance);
     // Check API health then either call the other APIs or send alert back to Pebble
     healthCheck();
 }
@@ -226,13 +219,10 @@ function getPTVData() {
     var haveConfig = false;
     if(Object.keys(localConfig1).length>0) {
     	// Have config from an active session
-        console.log("Config from active session " + localConfig1);
     	haveConfig = true;
     } else if(localStorage.getItem('localConfig1')!=null) {
     	// Have locally stored config
-    	console.log("Will parse: " + localStorage.getItem('localConfig1'));
     	localConfig1 = JSON.parse(localStorage.getItem('localConfig1'));
-    	console.log("Stored config string is: " + localConfig1);
     	haveConfig = true;
     } else {
     	// Don't have any config. Keep false
@@ -251,11 +241,11 @@ function getPTVData() {
 Pebble.addEventListener('ready', function (e) {
     console.log('JS connected!');
     // localStorage.clear();
-    getPTVData();
 });
 
 // Message from the watch to get the PT data from the API
 Pebble.addEventListener('appmessage', function (e) {
+    console.log('App message received!');
     // Toggle the direction for the next request
     var numDirections = localStorage['numDirections'];
     var d = localStorage['direction']; 
@@ -266,9 +256,7 @@ Pebble.addEventListener('appmessage', function (e) {
 });
 
 // User has launched the config page
-Pebble.addEventListener('showConfiguration', function() {
-    console.log('Showing configuration page: ' + configURL);
-    
+Pebble.addEventListener('showConfiguration', function() {    
     var params = '';
     
     if(Object.keys(localConfig1).length>0) {
@@ -291,12 +279,10 @@ Pebble.addEventListener('webviewclosed', function(e) {
 
         // Then, parse the string into an object
         localConfig1 = JSON.parse(configString1);
-        console.log(localConfig1);
         
         // Also save the total number of directions to toggle. Start off with 0
         localStorage.setItem('numDirections', localConfig1.directionID.length);
         localStorage.setItem('direction', 0);
-        console.log('Length of directions: ' + localStorage['numDirections']);
         
         // Get and send the PTV data
         getPTVData();

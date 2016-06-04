@@ -120,31 +120,24 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
             // Received from the PTV API			
             case KEY_ROUTE_SHORT:
                 strcpy(string_route_short, t->value->cstring);
-                APP_LOG(APP_LOG_LEVEL_INFO, "Received route short name: %s", string_route_short);
                 break;
             case KEY_ROUTE_LONG:
                 strcpy(string_route_long, t->value->cstring);
-                APP_LOG(APP_LOG_LEVEL_INFO, "Received route long name: %s", string_route_long);
                 break;
             case KEY_STOP:
                 strcpy(string_stop, t->value->cstring);
-                APP_LOG(APP_LOG_LEVEL_INFO, "Received stop name: %s", string_stop);
                 break;
             case KEY_DEPARTURE_1:
                 epoch_departure_1 = t->value->int32;
-                APP_LOG(APP_LOG_LEVEL_INFO, "Received time1: %d", epoch_departure_1);
                 break;
             case KEY_DEPARTURE_2:
                 epoch_departure_2 = t->value->int32;
-                APP_LOG(APP_LOG_LEVEL_INFO, "Received time2: %d", epoch_departure_2);
                 break;
             case KEY_DEPARTURE_3:
                 epoch_departure_3 = t->value->int32;
-                APP_LOG(APP_LOG_LEVEL_INFO, "Received time3: %d", epoch_departure_3);
                 break;
             case KEY_HEALTH:
                 health_status = t->value->int32;
-                APP_LOG(APP_LOG_LEVEL_INFO, "Received Health: %d", health_status);
                 break;
             // Error handling
             case KEY_MSG_TYPE:
