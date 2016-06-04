@@ -92,9 +92,13 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
 }
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
+    // Request new PT times
+    sendDict(GET_PT_DATA);
 }
 
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
+    // Request new PT times
+    sendDict(GET_PT_DATA);
 }
 
 static void click_config_provider(void *context) {
