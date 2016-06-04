@@ -182,22 +182,20 @@ function loadModes() {
     // Load the mode options into the selector
     loadOptions(options, selectObjMode);
     
+    // Reset routes selector
+    resetOptions(selectObjRoute);
+    disableSelector(selectObjRoute);
+    
     // If there is a stored mode selection then preselect it and load its routes
     if(storedOptions['mode']) {
         selectObjMode.value = storedOptions['mode'];
         loadRoutes(selectObjMode.value);
     }
-    
-    // Reset routes selector
-    resetOptions(selectObjRoute);
-    disableSelector(selectObjRoute);
 }
 
 // Get the list of routes for this mode and populate. Called when a mode is selected.
 function loadRoutes(modeID) {
     disableSubmit();
-    resetOptions(selectObjRoute);
-    disableSelector(selectObjRoute);
     
     // If a mode other than 'Select' was selected then load its routes
     if(modeID != -1) {
