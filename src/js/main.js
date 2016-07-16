@@ -1,4 +1,4 @@
-// Some variables  
+// Some variables
 var baseURL = 'http://timetableapi.ptv.vic.gov.au';
 var apiVersion = '/v2';
 
@@ -19,10 +19,10 @@ var healthCheckComplete = false;
 function sendDict() {
     // Send
     Pebble.sendAppMessage(
-        dictionary, 
+        dictionary,
         function(e) { console.log("Message sent to Pebble successfully!"); },
         function(e) { console.log("Error sending message to Pebble!"); }
-    );	
+    );
     dictionary = {};
 }
 
@@ -30,17 +30,17 @@ function sendDict() {
 function getURLWithSignature(baseURL, params, devID, key) {
     var endPoint = apiVersion + params + '&devid=' + devID;
     var signature = CryptoJS.HmacSHA1(endPoint, key);
-    
+
     return baseURL + endPoint + '&signature=' + signature.toString();
 }
 
 // Calls the API specified in finalURL and uses callback to do something with the data
 function callPTVAPI(finalURL, callback) {
     var xhr = new XMLHttpRequest();
-    
+
     xhr.open("GET", finalURL, true);
     xhr.onreadystatechange = function () {
-        if (xhr.readyState == 4 && xhr.status == 200) {            
+        if (xhr.readyState == 4 && xhr.status == 200) {
             callback(xhr.responseText);
         }
     }
@@ -52,7 +52,7 @@ function healthCheck() {
     var date = new Date();
     var params = '/healthcheck?timestamp=' + date.toISOString();
     var finalURL = getURLWithSignature(baseURL, params, devID, key);
-    
+
     // Call the API and provide a callback to handle the return data
     callPTVAPI(finalURL, healthCheckCallback);
 }
@@ -61,7 +61,7 @@ function healthCheck() {
 function healthCheckCallback(data) {
     healthCheckStatus = true;
     var healthJSON = JSON.parse(data);
-	
+
     // If any of the health check JSON members are false the health is not ok, i.e. false
     for(var member in healthJSON) {
         if(healthJSON[member]===false) {
@@ -69,11 +69,11 @@ function healthCheckCallback(data) {
             healthCheckStatus = false;
         }
     }
-    
+
     // Handle the health check status
     if(healthCheckStatus) {
         // Carry on with getting PTV data
-        var d = localStorage['direction']; 
+        var d = localStorage['direction'];
         specificNextDepartures(localConfig1.modeID,  localConfig1.routeID, localConfig1.allStops[stopIndex].stopID, localConfig1.directionID[d], localConfig1.limit);
     } else {
         // Return a bad health check result to the watch
@@ -87,14 +87,14 @@ function healthCheckCallback(data) {
 // Callback to handle the data returned from the Specific Next Departures API
 function specificNextDeparturesCallback(data) {
     var sndJSON = JSON.parse(data);
-    
+
     if(sndJSON.values == '' && ++stopIndex < localConfig1.allStops.length) {
         // Nothing at this stop. Try the next closest.
-        var d = localStorage['direction']; 
+        var d = localStorage['direction'];
         specificNextDepartures(localConfig1.modeID,  localConfig1.routeID, localConfig1.allStops[stopIndex].stopID, localConfig1.directionID[d], localConfig1.limit);
     } else {
         // Found departures. Send to watch.
-    
+
         // Use objects and loops for this.
         routeShortName = sndJSON.values[0]["platform"]["direction"]["line"]["line_number"];
         routeLongName = sndJSON.values[0]["platform"]["direction"]["direction_name"];
@@ -157,26 +157,26 @@ function distance(fromLat, fromLon, toLat, toLon) {
     fromLon *= (Math.PI / 180);
     toLat *= (Math.PI / 180);
     toLon *= (Math.PI / 180);
-    
+
     var deltaLat = toLat - fromLat;
     var deltaLon = toLon - fromLon;
-		
-    var angle = 2 * 
+
+    var angle = 2 *
         Math.asin(
             Math.sqrt(
-                Math.pow(Math.sin(deltaLat/2), 2) + 
-                Math.cos(fromLat) * Math.cos(toLat) * 
+                Math.pow(Math.sin(deltaLat/2), 2) +
+                Math.cos(fromLat) * Math.cos(toLat) *
                 Math.pow(Math.sin(deltaLon/2), 2)
             )
         );
-        
+
     return radius * angle;
 }
 
 // If can get location then do things
 function locationSuccess(pos) {
     var coordinates = pos.coords;
-    
+
     // Calculate and save the distance from current location to each stop
     // Config string is not being returned correctly
     var stops = localConfig1.allStops;
@@ -191,15 +191,15 @@ function locationSuccess(pos) {
         var lat = stops[i].stopLat;
         var lon = stops[i].stopLon;
     }
-    
+
     stopIndex = 0;
-    
-    // Get departures for this stop 
+
+    // Get departures for this stop
     // Check API health then either call the other APIs or send alert back to Pebble
     healthCheck();
 }
 
-// If cannot get location then don't send anything back. 
+// If cannot get location then don't send anything back.
 function locationError(err) {
     console.warn('location error (' + err.code + '): ' + err.message);
     // Send a location timeout error message back to display default text
@@ -246,20 +246,20 @@ Pebble.addEventListener('ready', function (e) {
 // Message from the watch to get the PT data from the API
 Pebble.addEventListener('appmessage', function (e) {
     console.log('App message received! ');
-    
+
     if(e.payload["KEY_MSG_TYPE"] == 2 ) {
         // Toggle the direction for the next request
         var numDirections = localStorage['numDirections'];
-        var d = localStorage['direction']; 
+        var d = localStorage['direction'];
         d = (numDirections - 1) - d;
         localStorage.setItem('direction', d);
     }
-    
+
     getPTVData()
 });
 
 // User has launched the config page
-Pebble.addEventListener('showConfiguration', function() {    
+Pebble.addEventListener('showConfiguration', function() {
     var params = '';
 
     localConfig1 = JSON.parse(localStorage.getItem('localConfig1'));
@@ -284,11 +284,11 @@ Pebble.addEventListener('webviewclosed', function(e) {
 
         // Then, parse the string into an object
         localConfig1 = JSON.parse(configString1);
-        
+
         // Also save the total number of directions to toggle. Start off with 0
         localStorage.setItem('numDirections', localConfig1.directionID.length);
         localStorage.setItem('direction', 0);
-        
+
         // Get and send the PTV data
         getPTVData();
     } else {
