@@ -261,8 +261,10 @@ Pebble.addEventListener('appmessage', function (e) {
 // User has launched the config page
 Pebble.addEventListener('showConfiguration', function() {    
     var params = '';
-    
-    if(Object.keys(localConfig1).length>0) {
+
+    localConfig1 = JSON.parse(localStorage.getItem('localConfig1'));
+
+    if(localConfig1) {
         params = '?mode=' + localConfig1.modeID + '&route=' + localConfig1.routeID;
     }
 
