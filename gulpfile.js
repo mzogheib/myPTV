@@ -1,12 +1,16 @@
 var concat = require('gulp-concat');
 var del = require('del');
+var fs = require('fs');
+var ftp = require('vinyl-ftp');
 var gulp = require('gulp');
+var gutil = require('gulp-util');
 var merge = require('merge-stream');
 var runSequence = require('run-sequence');
 var watch = require('gulp-watch');
 
 var paths = {
     dest: {
+        root: 'config/dist/',
         js: 'config/dist/js',
         css: 'config/dist/css',
         fonts: 'config/dist/fonts',
@@ -30,7 +34,9 @@ var paths = {
             'config/src/js/libs/hmac-sha1.js',
             'config/src/js/libs/slate.min.js'
         ]   
-    }
+    },
+
+    ftpConfig: 'ftp-config.json'
 };
 
 /**
@@ -91,4 +97,30 @@ gulp.task('copy', false, function () {
 
     return merge(html, css, fonts);
         
+});
+
+/**
+ * Deploy
+ */
+gulp.task('deploy', function () {
+    runSequence('build', 'upload');
+});
+
+/**
+ * Upload to ftp
+ */
+gulp.task('upload', function () {
+    var config = JSON.parse(fs.readFileSync(paths.ftpConfig));
+
+	var conn = ftp.create({
+		host: config.host,
+		user: config.user,
+		password: config.password,
+		parallel: config.parallel,
+		log: gutil.log
+	});
+
+    return gulp.src(paths.dest.root + '/**', { buffer: false })
+        .pipe(conn.newer(config.webroot)) // only upload newer files
+        .pipe(conn.dest(config.webroot));
 });
