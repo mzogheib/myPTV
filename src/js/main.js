@@ -216,20 +216,8 @@ var locationOptions = {
 
 function getPTVData() {
     // Load the config data.
-    var haveConfig = false;
-    if(Object.keys(localConfig1).length>0) {
-    	// Have config from an active session
-    	haveConfig = true;
-    } else if(localStorage.getItem('localConfig1')!=null) {
-    	// Have locally stored config
-    	localConfig1 = JSON.parse(localStorage.getItem('localConfig1'));
-    	haveConfig = true;
-    } else {
-    	// Don't have any config. Keep false
-    }
-
-    // Check for stored config data
-    if(haveConfig) {
+	localConfig1 = JSON.parse(localStorage.getItem('localConfig1'));
+    if(localConfig1) {
     	// Find the current position. Get the closest stop and departures within the locationSuccess callback
     	window.navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
     } else {
