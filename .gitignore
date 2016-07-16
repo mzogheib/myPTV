@@ -6,6 +6,7 @@ config/dist
 # Ignore private files
 src/js/private
 config/src/js/private
+ftp-config.json
 
 # Ignore waf lock file
 .lock-waf*
