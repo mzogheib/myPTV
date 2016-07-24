@@ -14,6 +14,7 @@ var departureTime1, departureTime2, departureTime3;
 var healthCheckComplete = false;
 
 const ERR_LOC = 90;
+const ERR_TIMEOUT = 91;
 const ERR_HEALTH = 93;
 
 // Send a dictionary of data to the Pebble
@@ -39,11 +40,22 @@ function callPTVAPI(finalURL, callback) {
     var xhr = new XMLHttpRequest();
 
     xhr.open("GET", finalURL, true);
+    xhr.timeout = 20000;
+
     xhr.onreadystatechange = function () {
         if (xhr.readyState == 4 && xhr.status == 200) {
             callback(xhr.responseText);
         }
     }
+
+    xhr.ontimeout = function () {
+        // Return a bad health check result to the watch
+        var dictionary = {
+            "KEY_MSG_TYPE": ERR_TIMEOUT
+        };
+        sendDict(dictionary);
+    }
+
     xhr.send();
 }
 

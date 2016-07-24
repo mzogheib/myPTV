@@ -52,7 +52,7 @@
 #define GET_HEALTH 8
 
 #define ERR_LOC 90
-#define ERR_URL 91
+#define ERR_TIMEOUT 91
 #define NO_CONFIG 92
 #define ERR_HEALTH 93
 
@@ -160,8 +160,8 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
                     case ERR_LOC:
                         display_alert(ERR_LOC);
                         break;
-                    case ERR_URL:
-                        APP_LOG(APP_LOG_LEVEL_ERROR, "URL timeout");
+                    case ERR_TIMEOUT:
+                        display_alert(ERR_TIMEOUT);
                         break;
                     case ERR_HEALTH:
                         display_alert(ERR_HEALTH);
@@ -209,6 +209,10 @@ static void display_alert(int alert) {
         case ERR_LOC:
             text_layer_set_text(text_layer_alert, "Location error.");
             APP_LOG(APP_LOG_LEVEL_ERROR, "Location error.");
+            break;
+        case ERR_TIMEOUT:
+            text_layer_set_text(text_layer_alert, "Timeout.");
+            APP_LOG(APP_LOG_LEVEL_ERROR, "Timeout.");
             break;
         case ERR_HEALTH:
             text_layer_set_text(text_layer_alert, "PTV unhealthy.");
