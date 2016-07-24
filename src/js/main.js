@@ -13,6 +13,12 @@ var departureTime1, departureTime2, departureTime3;
 
 var healthCheckComplete = false;
 
+const GET_NEAREST_STOP = 1;
+const GET_NEXT_STOP = 2;
+const GET_PREV_STOP = 3;
+const GET_NEXT_DIR = 4;
+const GET_UPDATED_DEPARTURES = 5;
+
 const ERR_LOC = 90;
 const ERR_TIMEOUT = 91;
 const ERR_HEALTH = 93;
@@ -244,15 +250,23 @@ Pebble.addEventListener('ready', function (e) {
 Pebble.addEventListener('appmessage', function (e) {
     console.log('App message received! ');
 
-    if(e.payload["KEY_MSG_TYPE"] == 2 ) {
-        // Toggle the direction for the next request
-        var numDirections = localStorage['numDirections'];
-        var d = localStorage['direction'];
-        d = (numDirections - 1) - d;
-        localStorage.setItem('direction', d);
+    switch(e.payload["KEY_MSG_TYPE"]) {
+        case GET_UPDATED_DEPARTURES:
+            console.log("Update departures");
+            getPTVData();
+            break;
+        case GET_NEXT_DIR:
+            // Toggle
+            console.log("Next direction");
+            var numDirections = localStorage['numDirections'];
+            var d = localStorage['direction'];
+            d = (numDirections - 1) - d;
+            localStorage.setItem('direction', d);
+
+            getPTVData();
+            break;
     }
 
-    getPTVData()
 });
 
 // User has launched the config page

@@ -39,9 +39,12 @@
 
 // Dictionary keys
 #define KEY_MSG_TYPE 0
-  
-#define GET_PT_DATA 1
-#define GET_NEXT_DIR 2
+#define GET_NEAREST_STOP 1
+#define GET_NEXT_STOP 2
+#define GET_PREV_STOP 3
+#define GET_NEXT_DIR 4
+#define GET_UPDATED_DEPARTURES 5
+
 #define KEY_ROUTE_SHORT 10
 #define KEY_ROUTE_LONG 11
 #define KEY_STOP 12
@@ -101,9 +104,9 @@ static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
 }
 
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
-    // Change directions
+    // Update departures
     if(persist_read_bool(CONFIG)) {
-        sendDict(GET_NEXT_DIR);
+        sendDict(GET_UPDATED_DEPARTURES);
     } else {
         display_alert(NO_CONFIG);
     }
@@ -308,7 +311,7 @@ static void write_time(struct tm tick_time, char *buffer) {
 static void handle_tick(struct tm *tick_time, TimeUnits units){  
     // Request new PT times
     if(persist_read_bool(CONFIG)) {
-        sendDict(GET_PT_DATA);
+        sendDict(GET_UPDATED_DEPARTURES);
     } else {
         display_alert(NO_CONFIG);
     }
