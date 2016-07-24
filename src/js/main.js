@@ -6,8 +6,6 @@ var apiVersion = '/v2';
 var localConfig1 = {};
 var stopDistances1 = [];
 
-var dictionary = {};
-var healthCheckStatus = true;
 var routeShortName, routeLongName;
 var stopIndex, stopName;
 var directionName1, directionName2;
@@ -15,15 +13,18 @@ var departureTime1, departureTime2, departureTime3;
 
 var healthCheckComplete = false;
 
+const ERR_LOC = 90;
+const ERR_TIMEOUT = 91;
+const ERR_HEALTH = 93;
+
 // Send a dictionary of data to the Pebble
-function sendDict() {
+function sendDict(dictionary) {
     // Send
     Pebble.sendAppMessage(
         dictionary,
         function(e) { console.log("Message sent to Pebble successfully!"); },
         function(e) { console.log("Error sending message to Pebble!"); }
     );
-    dictionary = {};
 }
 
 // Returns the complete API URL with calculated signature
@@ -39,11 +40,22 @@ function callPTVAPI(finalURL, callback) {
     var xhr = new XMLHttpRequest();
 
     xhr.open("GET", finalURL, true);
+    xhr.timeout = 20000;
+
     xhr.onreadystatechange = function () {
         if (xhr.readyState == 4 && xhr.status == 200) {
             callback(xhr.responseText);
         }
     }
+
+    xhr.ontimeout = function () {
+        // Return a bad health check result to the watch
+        var dictionary = {
+            "KEY_MSG_TYPE": ERR_TIMEOUT
+        };
+        sendDict(dictionary);
+    }
+
     xhr.send();
 }
 
@@ -59,7 +71,7 @@ function healthCheck() {
 
 // Callback to handle the data returned from Health Check API
 function healthCheckCallback(data) {
-    healthCheckStatus = true;
+    var healthCheckStatus = true;
     var healthJSON = JSON.parse(data);
 
     // If any of the health check JSON members are false the health is not ok, i.e. false
@@ -74,13 +86,13 @@ function healthCheckCallback(data) {
     if(healthCheckStatus) {
         // Carry on with getting PTV data
         var d = localStorage['direction'];
-        specificNextDepartures(localConfig1.modeID,  localConfig1.routeID, localConfig1.allStops[stopIndex].stopID, localConfig1.directionID[d], localConfig1.limit);
+        specificNextDepartures(localConfig1.modeID, localConfig1.routeID, localConfig1.allStops[stopIndex].stopID, localConfig1.directionID[d], localConfig1.limit);
     } else {
         // Return a bad health check result to the watch
-        dictionary = {
-            "KEY_HEALTH": healthCheckStatus
+        var dictionary = {
+            "KEY_MSG_TYPE": ERR_HEALTH
         };
-        sendDict();
+        sendDict(dictionary);
     }
 }
 
@@ -131,6 +143,7 @@ function specificNextDeparturesCallback(data) {
         departureTime3 = departureTime3.getTime()/1000;
 
         // Add to a dictionary for the watch
+        var dictionary = {};
         dictionary["KEY_ROUTE_SHORT"] = routeShortName;
         dictionary["KEY_ROUTE_LONG"] = routeLongName;
         dictionary["KEY_STOP"] = stopName;
@@ -138,7 +151,7 @@ function specificNextDeparturesCallback(data) {
         dictionary["KEY_DEPARTURE_2"] = departureTime2;
         dictionary["KEY_DEPARTURE_3"] = departureTime3;
 
-        sendDict();
+        sendDict(dictionary);
     }
 }
 
@@ -203,10 +216,10 @@ function locationSuccess(pos) {
 function locationError(err) {
     console.warn('location error (' + err.code + '): ' + err.message);
     // Send a location timeout error message back to display default text
-    dictionary = {
-        "KEY_MSG_TYPE": 90
+    var dictionary = {
+        "KEY_MSG_TYPE": ERR_LOC
     };
-    sendDict();
+    sendDict(dictionary);
 }
 
 var locationOptions = {
@@ -216,13 +229,9 @@ var locationOptions = {
 
 function getPTVData() {
     // Load the config data.
-	localConfig1 = JSON.parse(localStorage.getItem('localConfig1'));
-    if(localConfig1) {
-    	// Find the current position. Get the closest stop and departures within the locationSuccess callback
-    	window.navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
-    } else {
-    	console.log("No local storage");
-    }
+    localConfig1 = JSON.parse(localStorage.getItem('localConfig1'));
+    // Find the current position. Get the closest stop and departures within the locationSuccess callback
+    window.navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
 }
 
 // Event listeners

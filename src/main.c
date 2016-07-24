@@ -50,10 +50,14 @@
 #define KEY_DEPARTURE_3 16
 
 #define GET_HEALTH 8
-#define KEY_HEALTH 80
 
 #define ERR_LOC 90
-#define ERR_URL 91
+#define ERR_TIMEOUT 91
+#define NO_CONFIG 92
+#define ERR_HEALTH 93
+
+// Local storage keys
+#define CONFIG 1
 
 static Window *window;
 static Layer *background_layer;
@@ -62,7 +66,7 @@ static GColor color_bg_pt_route, color_bg_pt_stop, color_bg_pt_departures;
 static GColor color_font_pt_route, color_font_pt_stop, color_font_pt_departures;
 
 // Display
-static TextLayer *text_layer_pt_health;
+static TextLayer *text_layer_alert;
 static TextLayer *text_layer_pt_route_short;
 static TextLayer *text_layer_pt_route_long;
 static TextLayer *text_layer_pt_stop;
@@ -80,6 +84,7 @@ static int health_status;
 
 /* Function Prototypes */
 static void display_pt_times();
+static void display_alert(int alert);
 static void write_time(struct tm tick_time, char *buffer);
 static void sendDict(int msg_type);
 
@@ -87,13 +92,21 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
 }
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
-    // Request new PT times
-    sendDict(GET_NEXT_DIR);
+    // Change directions
+    if(persist_read_bool(CONFIG)) {
+        sendDict(GET_NEXT_DIR);
+    } else {
+        display_alert(NO_CONFIG);
+    }
 }
 
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
-    // Request new PT times
-    sendDict(GET_NEXT_DIR);
+    // Change directions
+    if(persist_read_bool(CONFIG)) {
+        sendDict(GET_NEXT_DIR);
+    } else {
+        display_alert(NO_CONFIG);
+    }
 }
 
 static void click_config_provider(void *context) {
@@ -105,12 +118,17 @@ static void click_config_provider(void *context) {
 // Process the dictionary sent from the phone
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     APP_LOG(APP_LOG_LEVEL_INFO, "Message recieved from phone!");
+
+    // Assume no errors unless messages received otherwise
+    bool alert = false;
 	
     // Read first item
     Tuple *t = dict_read_first(iterator);
 
     // Assume health status ok unless a message is received 
     health_status = 1;
+    // Receiving a message implies config has been selected so updated local storage
+    persist_write_bool(CONFIG, true);
 
     // For all items
     while(t != NULL) {
@@ -135,16 +153,19 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
             case KEY_DEPARTURE_3:
                 epoch_departure_3 = t->value->int32;
                 break;
-            case KEY_HEALTH:
-                health_status = t->value->int32;
-                break;
-            // Error handling
+            // Error/alert handling
             case KEY_MSG_TYPE:
+                alert = true;
                 switch(t->value->uint8) {
                     case ERR_LOC:
-                        APP_LOG(APP_LOG_LEVEL_ERROR, "Location timeout.");
-                    case ERR_URL:
-                        APP_LOG(APP_LOG_LEVEL_ERROR, "URL timeout");	
+                        display_alert(ERR_LOC);
+                        break;
+                    case ERR_TIMEOUT:
+                        display_alert(ERR_TIMEOUT);
+                        break;
+                    case ERR_HEALTH:
+                        display_alert(ERR_HEALTH);
+                        break;
                 }
                 break;
             default:
@@ -156,17 +177,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
         t = dict_read_next(iterator);
     }
 	
-    if(health_status==0) {
-        // Display some unavailable message
-        text_layer_set_text(text_layer_pt_health, "Departures unavailable.");
-        text_layer_set_text(text_layer_pt_route_short, "");
-        text_layer_set_text(text_layer_pt_route_long, "");
-        text_layer_set_text(text_layer_pt_stop, "");
-        text_layer_set_text(text_layer_pt_departures_1, "");
-        text_layer_set_text(text_layer_pt_departures_2_3, "");
-		
-    } else {
-        // Health was ok and departure times were received
+    if(!alert) {
         APP_LOG(APP_LOG_LEVEL_INFO, "New departures received and displaying on watch!");
         display_pt_times();
     }
@@ -184,10 +195,36 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
     APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success!");
 }
 
+static void display_alert(int alert) {
+    text_layer_set_text(text_layer_pt_route_short, "");
+    text_layer_set_text(text_layer_pt_route_long, "");
+    text_layer_set_text(text_layer_pt_stop, "");
+    text_layer_set_text(text_layer_pt_departures_1, "");
+    text_layer_set_text(text_layer_pt_departures_2_3, "");
+    switch(alert){
+        case NO_CONFIG:
+            text_layer_set_text(text_layer_alert, "No config.");
+            APP_LOG(APP_LOG_LEVEL_ERROR, "No config.");
+            break;
+        case ERR_LOC:
+            text_layer_set_text(text_layer_alert, "Location error.");
+            APP_LOG(APP_LOG_LEVEL_ERROR, "Location error.");
+            break;
+        case ERR_TIMEOUT:
+            text_layer_set_text(text_layer_alert, "Timeout.");
+            APP_LOG(APP_LOG_LEVEL_ERROR, "Timeout.");
+            break;
+        case ERR_HEALTH:
+            text_layer_set_text(text_layer_alert, "PTV unhealthy.");
+            APP_LOG(APP_LOG_LEVEL_ERROR, "PTV unhealthy.");
+            break;
+    }
+}
+
 static void display_pt_times() {
 	
     // Clear any warnings
-    text_layer_set_text(text_layer_pt_health, "");
+    text_layer_set_text(text_layer_alert, "");
 	
     // Display the route names
     text_layer_set_text(text_layer_pt_route_short, string_route_short);
@@ -270,7 +307,11 @@ static void write_time(struct tm tick_time, char *buffer) {
 // Run this function at every tick of the clock, i.e. second or minute
 static void handle_tick(struct tm *tick_time, TimeUnits units){  
     // Request new PT times
-    sendDict(GET_PT_DATA);
+    if(persist_read_bool(CONFIG)) {
+        sendDict(GET_PT_DATA);
+    } else {
+        display_alert(NO_CONFIG);
+    }
 }
 
 // Convenience function to create a text layer
@@ -342,8 +383,8 @@ static void window_load(Window *window) {
 	
     // API Health Status layer
     text_layer_rect = (GRect) { .origin = { STOP_LAYER_X+TEXT_LAYER_PADDING, STOP_LAYER_Y }, .size = { bounds.size.w, STOP_LAYER_HEIGHT } };
-    text_layer_pt_health = init_text_layer(text_layer_rect, color_font_pt_stop, GColorClear, font_route_short, GTextAlignmentCenter);
-    text_layer_set_text(text_layer_pt_health, "");
+    text_layer_alert = init_text_layer(text_layer_rect, color_font_pt_stop, GColorClear, font_route_short, GTextAlignmentCenter);
+    text_layer_set_text(text_layer_alert, "");
 	
     // Short Route layer (large text)
     text_layer_rect = (GRect) { .origin = { ROUTE_SHORT_LAYER_X + TEXT_LAYER_PADDING, ROUTE_SHORT_LAYER_Y }, .size = { bounds.size.w, ROUTE_SHORT_LAYER_HEIGHT } };
@@ -371,7 +412,7 @@ static void window_load(Window *window) {
     text_layer_set_text(text_layer_pt_departures_2_3, "");
  
     layer_add_child(window_layer, background_layer);
-    layer_add_child(window_layer, text_layer_get_layer(text_layer_pt_health));
+    layer_add_child(window_layer, text_layer_get_layer(text_layer_alert));
     layer_add_child(window_layer, text_layer_get_layer(text_layer_pt_route_short));
     layer_add_child(window_layer, text_layer_get_layer(text_layer_pt_route_long));
     layer_add_child(window_layer, text_layer_get_layer(text_layer_pt_stop));
@@ -381,7 +422,7 @@ static void window_load(Window *window) {
 
 static void window_unload(Window *window) {
     layer_destroy(background_layer);
-    text_layer_destroy(text_layer_pt_health); 
+    text_layer_destroy(text_layer_alert); 
     text_layer_destroy(text_layer_pt_route_short); 
     text_layer_destroy(text_layer_pt_route_long); 
     text_layer_destroy(text_layer_pt_stop);
@@ -398,6 +439,8 @@ static void init(void) {
     });
     const bool animated = true;
     window_stack_push(window, animated);
+
+    // persist_delete(CONFIG);
  
     // Subcribe to ticker 
     tick_timer_service_subscribe(MINUTE_UNIT, handle_tick);	
