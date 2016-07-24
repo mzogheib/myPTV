@@ -1,28 +1,30 @@
 {
-  "uuid": "f89b3cc9-1262-47c2-9099-041982ae72cf",
-  "shortName": "myPTV",
-  "longName": "myPTV",
-  "companyName": "Marwan Zogheib",
-  "versionLabel": "0.7",
-  "sdkVersion": "3",
-  "targetPlatforms": ["aplite", "basalt"],
-  "watchapp": {
-    "watchface": false
-  },
-  "capabilities": [
-     "configurable"
-  ],
-  "appKeys": {
-		"KEY_MSG_TYPE": 0,
-		"KEY_ROUTE_SHORT": 10,
-		"KEY_ROUTE_LONG": 11,
-		"KEY_STOP": 12,
-		"KEY_DEPARTURE_1": 14,
-		"KEY_DEPARTURE_2": 15,
-		"KEY_DEPARTURE_3": 16,
-		"KEY_HEALTH":	80
-  },
-	"resources": {
-		"media": []
-	}
+    "uuid": "f89b3cc9-1262-47c2-9099-041982ae72cf",
+    "shortName": "myPTV",
+    "longName": "myPTV",
+    "companyName": "Marwan Zogheib",
+    "versionLabel": "0.7",
+    "sdkVersion": "3",
+    "targetPlatforms": [
+        "aplite",
+        "basalt"
+    ],
+    "watchapp": {
+        "watchface": false
+    },
+    "capabilities": [
+        "configurable"
+    ],
+    "appKeys": {
+        "KEY_MSG_TYPE": 0,
+        "KEY_ROUTE_SHORT": 10,
+        "KEY_ROUTE_LONG": 11,
+        "KEY_STOP": 12,
+        "KEY_DEPARTURE_1": 14,
+        "KEY_DEPARTURE_2": 15,
+        "KEY_DEPARTURE_3": 16
+    },
+    "resources": {
+        "media": []
+    }
 }

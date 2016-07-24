@@ -6,7 +6,6 @@ var apiVersion = '/v2';
 var localConfig1 = {};
 var stopDistances1 = [];
 
-var healthCheckStatus = true;
 var routeShortName, routeLongName;
 var stopIndex, stopName;
 var directionName1, directionName2;
@@ -15,6 +14,7 @@ var departureTime1, departureTime2, departureTime3;
 var healthCheckComplete = false;
 
 const ERR_LOC = 90;
+const ERR_HEALTH = 93;
 
 // Send a dictionary of data to the Pebble
 function sendDict(dictionary) {
@@ -59,7 +59,7 @@ function healthCheck() {
 
 // Callback to handle the data returned from Health Check API
 function healthCheckCallback(data) {
-    healthCheckStatus = true;
+    var healthCheckStatus = true;
     var healthJSON = JSON.parse(data);
 
     // If any of the health check JSON members are false the health is not ok, i.e. false
@@ -74,11 +74,11 @@ function healthCheckCallback(data) {
     if(healthCheckStatus) {
         // Carry on with getting PTV data
         var d = localStorage['direction'];
-        specificNextDepartures(localConfig1.modeID,  localConfig1.routeID, localConfig1.allStops[stopIndex].stopID, localConfig1.directionID[d], localConfig1.limit);
+        specificNextDepartures(localConfig1.modeID, localConfig1.routeID, localConfig1.allStops[stopIndex].stopID, localConfig1.directionID[d], localConfig1.limit);
     } else {
         // Return a bad health check result to the watch
         var dictionary = {
-            "KEY_HEALTH": healthCheckStatus
+            "KEY_MSG_TYPE": ERR_HEALTH
         };
         sendDict(dictionary);
     }

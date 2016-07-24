@@ -50,11 +50,11 @@
 #define KEY_DEPARTURE_3 16
 
 #define GET_HEALTH 8
-#define KEY_HEALTH 80
 
 #define ERR_LOC 90
 #define ERR_URL 91
 #define NO_CONFIG 92
+#define ERR_HEALTH 93
 
 // Local storage keys
 #define CONFIG 1
@@ -153,9 +153,6 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
             case KEY_DEPARTURE_3:
                 epoch_departure_3 = t->value->int32;
                 break;
-            case KEY_HEALTH:
-                health_status = t->value->int32;
-                break;
             // Error/alert handling
             case KEY_MSG_TYPE:
                 alert = true;
@@ -165,6 +162,9 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
                         break;
                     case ERR_URL:
                         APP_LOG(APP_LOG_LEVEL_ERROR, "URL timeout");
+                        break;
+                    case ERR_HEALTH:
+                        display_alert(ERR_HEALTH);
                         break;
                 }
                 break;
@@ -209,6 +209,10 @@ static void display_alert(int alert) {
         case ERR_LOC:
             text_layer_set_text(text_layer_alert, "Location error.");
             APP_LOG(APP_LOG_LEVEL_ERROR, "Location error.");
+            break;
+        case ERR_HEALTH:
+            text_layer_set_text(text_layer_alert, "PTV unhealthy.");
+            APP_LOG(APP_LOG_LEVEL_ERROR, "PTV unhealthy.");
             break;
     }
 }
