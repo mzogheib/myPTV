@@ -150,11 +150,11 @@ static void click_config_provider(void *context) {
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     // Assume no errors unless messages received otherwise
     bool alert = false;
-	
+
     // Read first item
     Tuple *t = dict_read_first(iterator);
 
-    // Assume health status ok unless a message is received 
+    // Assume health status ok unless a message is received
     health_status = 1;
     // Receiving a message implies config has been selected so updated local storage
     persist_write_bool(CONFIG, true);
@@ -163,7 +163,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     while(t != NULL) {
         // Which key was received?
         switch(t->key) {
-            // Received from the PTV API			
+            // Received from the PTV API
             case KEY_ROUTE_SHORT:
                 strcpy(string_route_short, t->value->cstring);
                 break;
@@ -201,11 +201,11 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
                 APP_LOG(APP_LOG_LEVEL_ERROR, "Key %d not recognized!", (int)t->key);
                 break;
         }
-        
+
         // Look for next item
         t = dict_read_next(iterator);
     }
-	
+
     if(!alert) {
         display_pt_times();
     }
@@ -249,25 +249,25 @@ static void display_alert(int alert) {
 }
 
 static void display_pt_times() {
-	
+
     // Clear any warnings
     text_layer_set_text(text_layer_alert, "");
-	
+
     // Display the route names
     text_layer_set_text(text_layer_pt_route_short, string_route_short);
     text_layer_set_text(text_layer_pt_route_long, string_route_long);
-	
+
     // Display the stop names
     text_layer_set_text(text_layer_pt_stop, string_stop);
-	
+
     // Get the current time
-    time_t epoch_now = time(NULL); 
-	
+    time_t epoch_now = time(NULL);
+
     // Calc the number of mins until each departure. It will truncate down but that's more conservative so ok.
     int time_diff_1 = (epoch_departure_1 - (int)epoch_now)/60;
     int time_diff_2 = (epoch_departure_2 - (int)epoch_now)/60;
     int time_diff_3 = (epoch_departure_3 - (int)epoch_now)/60;
-	
+
     // Display departures
     if(time_diff_1<=0) {
         strcpy(string_departure_1, "NOW");
@@ -280,18 +280,18 @@ static void display_pt_times() {
     } else {
         snprintf(string_departure_2, sizeof(string_departure_2), "%d", time_diff_2);
         strcat(string_departure_2, "mins");
-    }	
+    }
     if(time_diff_3<=0) {
         strcpy(string_departure_3, "NOW");
     } else {
         snprintf(string_departure_3, sizeof(string_departure_3), "%d", time_diff_3);
         strcat(string_departure_3, "mins");
     }
-	
+
     strcpy(string_departure_2_3, string_departure_2);
     strcat(string_departure_2_3, ", ");
-    strcat(string_departure_2_3, string_departure_3);	
-	
+    strcat(string_departure_2_3, string_departure_3);
+
     text_layer_set_text(text_layer_pt_departures_1, string_departure_1);
     text_layer_set_text(text_layer_pt_departures_2_3, string_departure_2_3);
 }
@@ -299,13 +299,13 @@ static void display_pt_times() {
 // Send dict to phone and do something
 static void sendDict(int msg) {
     DictionaryIterator *dict;
-	
+
     // Begin dictionary
     app_message_outbox_begin(&dict);
-	
+
     // Add a key-value pair for each parameter
     dict_write_int8(dict, KEY_MSG_TYPE, msg);
-  
+
     // Send the message!
     app_message_outbox_send();
 }
@@ -321,15 +321,15 @@ static void write_time(struct tm tick_time, char *buffer) {
         // Use 12 hour format
         strftime(buffer, sizeof("00:00"), "%I:%M", &tick_time);
     }
-   
+
     // Strip leading zero
     if(buffer[0]=='0') strcpy(buffer, buffer+1);
-  
+
     // APP_LOG(APP_LOG_LEVEL_INFO, "Buffer: %s", buffer);
 }
 
 // Run this function at every tick of the clock, i.e. second or minute
-static void handle_tick(struct tm *tick_time, TimeUnits units){  
+static void handle_tick(struct tm *tick_time, TimeUnits units){
     // Request new PT times
     if(persist_read_bool(CONFIG)) {
         sendDict(GET_UPDATED_DEPARTURES);
@@ -345,7 +345,7 @@ static TextLayer *init_text_layer(GRect location, GColor colour, GColor backgrou
     text_layer_set_background_color(layer, background);
     text_layer_set_font(layer, font);
     text_layer_set_text_alignment(layer, alignment);
- 
+
     return layer;
 }
 
@@ -356,14 +356,14 @@ static void init_colors() {
     color_bg_pt_stop = GColorBlue;
     color_bg_pt_departures = GColorRed;
     color_font_pt_route = GColorWhite;
-    color_font_pt_stop = GColorWhite;; 
+    color_font_pt_stop = GColorWhite;
     color_font_pt_departures = GColorWhite;
 #else
     color_bg_pt_route = GColorWhite;
     color_bg_pt_stop = GColorBlack;
     color_bg_pt_departures = GColorWhite;
     color_font_pt_route = GColorBlack;
-    color_font_pt_stop = GColorWhite;; 
+    color_font_pt_stop = GColorWhite;;
     color_font_pt_departures = GColorBlack;
 #endif
 }
@@ -385,31 +385,30 @@ static void draw_background(Layer *layer, GContext *ctx) {
 static void window_load(Window *window) {
     Layer *window_layer = window_get_root_layer(window);
     GRect bounds = layer_get_bounds(window_layer);
-	
+
     init_colors();
     background_layer = layer_create(bounds);
     layer_set_update_proc(background_layer, draw_background);
-	
+
     GFont font_route_short, font_route_long, font_stop, font_departure_1, font_departure_2_3;
     GRect text_layer_rect;
-	
+
     font_route_short = fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD);
     font_route_long = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
     font_stop = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
     font_departure_1 = fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD);
     font_departure_2_3 = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
-	
-	
+
     // font_time = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_CUSTOM_FONT_28));
     // font_stop = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_CUSTOM_FONT_20));
     // font_route = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_CUSTOM_FONT_20));
     // font_route_time = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_CUSTOM_FONT_20));
-	
+
     // API Health Status layer
     text_layer_rect = (GRect) { .origin = { STOP_LAYER_X+TEXT_LAYER_PADDING, STOP_LAYER_Y }, .size = { bounds.size.w, STOP_LAYER_HEIGHT } };
     text_layer_alert = init_text_layer(text_layer_rect, color_font_pt_stop, GColorClear, font_route_short, GTextAlignmentCenter);
     text_layer_set_text(text_layer_alert, "");
-	
+
     // Short Route layer (large text)
     text_layer_rect = (GRect) { .origin = { ROUTE_SHORT_LAYER_X + TEXT_LAYER_PADDING, ROUTE_SHORT_LAYER_Y }, .size = { bounds.size.w, ROUTE_SHORT_LAYER_HEIGHT } };
     text_layer_pt_route_short = init_text_layer(text_layer_rect, color_font_pt_route, GColorClear, font_route_short, GTextAlignmentLeft);
@@ -419,22 +418,22 @@ static void window_load(Window *window) {
     text_layer_rect = (GRect) { .origin = { ROUTE_LONG_LAYER_X + TEXT_LAYER_PADDING, ROUTE_LONG_LAYER_Y }, .size = { bounds.size.w, ROUTE_LONG_LAYER_HEIGHT } };
     text_layer_pt_route_long = init_text_layer(text_layer_rect, color_font_pt_route, GColorClear, font_route_long, GTextAlignmentLeft);
     text_layer_set_text(text_layer_pt_route_long, "");
-		
+
     // Stop Layer
     text_layer_rect = (GRect) { .origin = { STOP_LAYER_X + TEXT_LAYER_PADDING, STOP_LAYER_Y }, .size = { bounds.size.w - TEXT_LAYER_PADDING, STOP_LAYER_HEIGHT } };
     text_layer_pt_stop = init_text_layer(text_layer_rect, color_font_pt_stop, GColorClear, font_stop, GTextAlignmentCenter);
     text_layer_set_text(text_layer_pt_stop, "Getting stop...");
-	
+
     // First departure layer
     text_layer_rect = (GRect) { .origin = { DEPARTURE_1_LAYER_X + TEXT_LAYER_PADDING, DEPARTURE_1_LAYER_Y }, .size = { bounds.size.w, DEPARTURE_1_LAYER_HEIGHT } };
     text_layer_pt_departures_1 = init_text_layer(text_layer_rect, color_font_pt_departures, GColorClear, font_departure_1, GTextAlignmentLeft);
     text_layer_set_text(text_layer_pt_departures_1, "Getting departures...");
-	
+
     // Second and third departures layer
     text_layer_rect = (GRect) { .origin = { DEPARTURE_2_3_LAYER_X + TEXT_LAYER_PADDING, DEPARTURE_2_3_LAYER_Y }, .size = { bounds.size.w-TEXT_LAYER_PADDING, DEPARTURE_2_3_LAYER_HEIGHT } };
     text_layer_pt_departures_2_3 = init_text_layer(text_layer_rect, color_font_pt_departures, GColorClear, font_departure_2_3, GTextAlignmentRight);
     text_layer_set_text(text_layer_pt_departures_2_3, "");
- 
+
     layer_add_child(window_layer, background_layer);
     layer_add_child(window_layer, text_layer_get_layer(text_layer_alert));
     layer_add_child(window_layer, text_layer_get_layer(text_layer_pt_route_short));
@@ -446,9 +445,9 @@ static void window_load(Window *window) {
 
 static void window_unload(Window *window) {
     layer_destroy(background_layer);
-    text_layer_destroy(text_layer_alert); 
-    text_layer_destroy(text_layer_pt_route_short); 
-    text_layer_destroy(text_layer_pt_route_long); 
+    text_layer_destroy(text_layer_alert);
+    text_layer_destroy(text_layer_pt_route_short);
+    text_layer_destroy(text_layer_pt_route_long);
     text_layer_destroy(text_layer_pt_stop);
     text_layer_destroy(text_layer_pt_departures_1);
     text_layer_destroy(text_layer_pt_departures_2_3);
@@ -465,17 +464,17 @@ static void init(void) {
     window_stack_push(window, animated);
 
     // persist_delete(CONFIG);
- 
-    // Subcribe to ticker 
-    tick_timer_service_subscribe(MINUTE_UNIT, handle_tick);	
-	
+
+    // Subcribe to ticker
+    tick_timer_service_subscribe(MINUTE_UNIT, handle_tick);
+
     // Register callbacks
     app_message_register_inbox_received(inbox_received_callback);
     app_message_register_inbox_dropped(inbox_dropped_callback);
     app_message_register_outbox_failed(outbox_failed_callback);
     app_message_register_outbox_sent(outbox_sent_callback);
     // Open sesame
-    app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());	
+    app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
 }
 
 static void deinit(void) {

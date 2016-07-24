@@ -157,10 +157,6 @@ function specificNextDeparturesCallback(data) {
         departureTime2 = new Date(departureTime2);
         departureTime3 = new Date(departureTime3);
 
-        //console.log(departureTime1);
-        //console.log(departureTime2);
-        //console.log(departureTime3);
-
         // Convert to ms sice epoch
         departureTime1 = departureTime1.getTime()/1000;
         departureTime2 = departureTime2.getTime()/1000;
@@ -308,7 +304,6 @@ Pebble.addEventListener('appmessage', function (e) {
             healthCheck();
             break;
     }
-
 });
 
 // User has launched the config page
