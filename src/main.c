@@ -91,7 +91,31 @@ static void display_alert(int alert);
 static void write_time(struct tm tick_time, char *buffer);
 static void sendDict(int msg_type);
 
-static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
+static void select_single_click_handler(ClickRecognizerRef recognizer, void *context) {
+    // Next nearest stop
+    if(persist_read_bool(CONFIG)) {
+        sendDict(GET_NEXT_STOP);
+    } else {
+        display_alert(NO_CONFIG);
+    }
+}
+
+static void select_multi_click_handler(ClickRecognizerRef recognizer, void *context) {
+    // Previous nearest stop
+    if(persist_read_bool(CONFIG)) {
+        sendDict(GET_PREV_STOP);
+    } else {
+        display_alert(NO_CONFIG);
+    }
+}
+
+static void select_long_click_handler(ClickRecognizerRef recognizer, void *context) {
+    // Nearest stop
+    if(persist_read_bool(CONFIG)) {
+        sendDict(GET_NEAREST_STOP);
+    } else {
+        display_alert(NO_CONFIG);
+    }
 }
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -113,15 +137,17 @@ static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
 }
 
 static void click_config_provider(void *context) {
-    window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
+    window_single_click_subscribe(BUTTON_ID_SELECT, select_single_click_handler);
+    window_multi_click_subscribe(BUTTON_ID_SELECT, 2, 0, 0, false, select_multi_click_handler);
+    window_long_click_subscribe(BUTTON_ID_SELECT, 0, select_long_click_handler, 0);
+
     window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
+
     window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
 }
 
 // Process the dictionary sent from the phone
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
-    APP_LOG(APP_LOG_LEVEL_INFO, "Message recieved from phone!");
-
     // Assume no errors unless messages received otherwise
     bool alert = false;
 	
@@ -181,7 +207,6 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     }
 	
     if(!alert) {
-        APP_LOG(APP_LOG_LEVEL_INFO, "New departures received and displaying on watch!");
         display_pt_times();
     }
 }
@@ -195,7 +220,6 @@ static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResul
 }
 
 static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
-    APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success!");
 }
 
 static void display_alert(int alert) {
@@ -243,9 +267,6 @@ static void display_pt_times() {
     int time_diff_1 = (epoch_departure_1 - (int)epoch_now)/60;
     int time_diff_2 = (epoch_departure_2 - (int)epoch_now)/60;
     int time_diff_3 = (epoch_departure_3 - (int)epoch_now)/60;
-    // APP_LOG(APP_LOG_LEVEL_INFO, "Mins until departure1: %d", time_diff_1);
-    // APP_LOG(APP_LOG_LEVEL_INFO, "Mins until departure2: %d", time_diff_2);
-    // APP_LOG(APP_LOG_LEVEL_INFO, "Mins until departure3: %d", time_diff_3);
 	
     // Display departures
     if(time_diff_1<=0) {
