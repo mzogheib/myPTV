@@ -6,7 +6,6 @@ var apiVersion = '/v2';
 var localConfig1 = {};
 var stopDistances1 = [];
 
-var dictionary = {};
 var healthCheckStatus = true;
 var routeShortName, routeLongName;
 var stopIndex, stopName;
@@ -15,15 +14,16 @@ var departureTime1, departureTime2, departureTime3;
 
 var healthCheckComplete = false;
 
+const ERR_LOC = 90;
+
 // Send a dictionary of data to the Pebble
-function sendDict() {
+function sendDict(dictionary) {
     // Send
     Pebble.sendAppMessage(
         dictionary,
         function(e) { console.log("Message sent to Pebble successfully!"); },
         function(e) { console.log("Error sending message to Pebble!"); }
     );
-    dictionary = {};
 }
 
 // Returns the complete API URL with calculated signature
@@ -77,10 +77,10 @@ function healthCheckCallback(data) {
         specificNextDepartures(localConfig1.modeID,  localConfig1.routeID, localConfig1.allStops[stopIndex].stopID, localConfig1.directionID[d], localConfig1.limit);
     } else {
         // Return a bad health check result to the watch
-        dictionary = {
+        var dictionary = {
             "KEY_HEALTH": healthCheckStatus
         };
-        sendDict();
+        sendDict(dictionary);
     }
 }
 
@@ -131,6 +131,7 @@ function specificNextDeparturesCallback(data) {
         departureTime3 = departureTime3.getTime()/1000;
 
         // Add to a dictionary for the watch
+        var dictionary = {};
         dictionary["KEY_ROUTE_SHORT"] = routeShortName;
         dictionary["KEY_ROUTE_LONG"] = routeLongName;
         dictionary["KEY_STOP"] = stopName;
@@ -138,7 +139,7 @@ function specificNextDeparturesCallback(data) {
         dictionary["KEY_DEPARTURE_2"] = departureTime2;
         dictionary["KEY_DEPARTURE_3"] = departureTime3;
 
-        sendDict();
+        sendDict(dictionary);
     }
 }
 
@@ -203,10 +204,10 @@ function locationSuccess(pos) {
 function locationError(err) {
     console.warn('location error (' + err.code + '): ' + err.message);
     // Send a location timeout error message back to display default text
-    dictionary = {
-        "KEY_MSG_TYPE": 90
+    var dictionary = {
+        "KEY_MSG_TYPE": ERR_LOC
     };
-    sendDict();
+    sendDict(dictionary);
 }
 
 var locationOptions = {

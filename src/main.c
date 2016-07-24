@@ -118,6 +118,9 @@ static void click_config_provider(void *context) {
 // Process the dictionary sent from the phone
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     APP_LOG(APP_LOG_LEVEL_INFO, "Message recieved from phone!");
+
+    // Assume no errors unless messages received otherwise
+    bool alert = false;
 	
     // Read first item
     Tuple *t = dict_read_first(iterator);
@@ -153,13 +156,16 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
             case KEY_HEALTH:
                 health_status = t->value->int32;
                 break;
-            // Error handling
+            // Error/alert handling
             case KEY_MSG_TYPE:
+                alert = true;
                 switch(t->value->uint8) {
                     case ERR_LOC:
-                        APP_LOG(APP_LOG_LEVEL_ERROR, "Location timeout.");
+                        display_alert(ERR_LOC);
+                        break;
                     case ERR_URL:
-                        APP_LOG(APP_LOG_LEVEL_ERROR, "URL timeout");	
+                        APP_LOG(APP_LOG_LEVEL_ERROR, "URL timeout");
+                        break;
                 }
                 break;
             default:
@@ -171,17 +177,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
         t = dict_read_next(iterator);
     }
 	
-    if(health_status==0) {
-        // Display some unavailable message
-        text_layer_set_text(text_layer_alert, "Departures unavailable.");
-        text_layer_set_text(text_layer_pt_route_short, "");
-        text_layer_set_text(text_layer_pt_route_long, "");
-        text_layer_set_text(text_layer_pt_stop, "");
-        text_layer_set_text(text_layer_pt_departures_1, "");
-        text_layer_set_text(text_layer_pt_departures_2_3, "");
-		
-    } else {
-        // Health was ok and departure times were received
+    if(!alert) {
         APP_LOG(APP_LOG_LEVEL_INFO, "New departures received and displaying on watch!");
         display_pt_times();
     }
@@ -209,6 +205,10 @@ static void display_alert(int alert) {
         case NO_CONFIG:
             text_layer_set_text(text_layer_alert, "No config.");
             APP_LOG(APP_LOG_LEVEL_ERROR, "No config.");
+            break;
+        case ERR_LOC:
+            text_layer_set_text(text_layer_alert, "Location error.");
+            APP_LOG(APP_LOG_LEVEL_ERROR, "Location error.");
             break;
     }
 }
