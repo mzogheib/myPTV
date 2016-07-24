@@ -216,13 +216,9 @@ var locationOptions = {
 
 function getPTVData() {
     // Load the config data.
-	localConfig1 = JSON.parse(localStorage.getItem('localConfig1'));
-    if(localConfig1) {
-    	// Find the current position. Get the closest stop and departures within the locationSuccess callback
-    	window.navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
-    } else {
-    	console.log("No local storage");
-    }
+    localConfig1 = JSON.parse(localStorage.getItem('localConfig1'));
+    // Find the current position. Get the closest stop and departures within the locationSuccess callback
+    window.navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
 }
 
 // Event listeners
