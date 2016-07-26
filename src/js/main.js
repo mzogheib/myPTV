@@ -7,11 +7,17 @@ var localConfig1 = {};
 var stopDistances1 = [];
 
 var routeShortName, routeLongName;
-var stopIndex, stopName;
+var stopIndex, stopIndexIncrement, stopName;
 var directionName1, directionName2;
 var departureTime1, departureTime2, departureTime3;
 
 var healthCheckComplete = false;
+
+const GET_NEAREST_STOP = 1;
+const GET_NEXT_STOP = 2;
+const GET_PREV_STOP = 3;
+const GET_NEXT_DIR = 4;
+const GET_UPDATED_DEPARTURES = 5;
 
 const ERR_LOC = 90;
 const ERR_TIMEOUT = 91;
@@ -22,8 +28,8 @@ function sendDict(dictionary) {
     // Send
     Pebble.sendAppMessage(
         dictionary,
-        function(e) { console.log("Message sent to Pebble successfully!"); },
-        function(e) { console.log("Error sending message to Pebble!"); }
+        function(e) {},
+        function(e) {}
     );
 }
 
@@ -38,6 +44,7 @@ function getURLWithSignature(baseURL, params, devID, key) {
 // Calls the API specified in finalURL and uses callback to do something with the data
 function callPTVAPI(finalURL, callback) {
     var xhr = new XMLHttpRequest();
+    // console.log(finalURL);
 
     xhr.open("GET", finalURL, true);
     xhr.timeout = 20000;
@@ -86,7 +93,13 @@ function healthCheckCallback(data) {
     if(healthCheckStatus) {
         // Carry on with getting PTV data
         var d = localStorage['direction'];
-        specificNextDepartures(localConfig1.modeID, localConfig1.routeID, localConfig1.allStops[stopIndex].stopID, localConfig1.directionID[d], localConfig1.limit);
+        specificNextDepartures(
+            localConfig1.modeID,
+            localConfig1.routeID,
+            localConfig1.allStops[stopIndex].stopID,
+            localConfig1.directionID[d],
+            localConfig1.limit
+        );
     } else {
         // Return a bad health check result to the watch
         var dictionary = {
@@ -100,10 +113,26 @@ function healthCheckCallback(data) {
 function specificNextDeparturesCallback(data) {
     var sndJSON = JSON.parse(data);
 
-    if(sndJSON.values == '' && ++stopIndex < localConfig1.allStops.length) {
-        // Nothing at this stop. Try the next closest.
+    if(sndJSON.values == '') {
+        // Nothing at this stop. Try the next/prev nearest.
+        if (stopIndex == 0) {
+            // Tried all the way to the nearest stop.
+            // Ensure we don't go out of the array bounds
+            stopIndexIncrement = 1;
+        } else if (stopIndex == localConfig1.allStops.length - 1) {
+            // Tried all the way to the furthest stop.
+            // Ensure we don't go out of the array bounds
+            stopIndexIncrement = -1;
+        }
+
+        stopIndex += 1 * stopIndexIncrement;
         var d = localStorage['direction'];
-        specificNextDepartures(localConfig1.modeID,  localConfig1.routeID, localConfig1.allStops[stopIndex].stopID, localConfig1.directionID[d], localConfig1.limit);
+        specificNextDepartures(localConfig1.modeID,
+            localConfig1.routeID,
+            localConfig1.allStops[stopIndex].stopID,
+            localConfig1.directionID[d],
+            localConfig1.limit
+        );
     } else {
         // Found departures. Send to watch.
 
@@ -112,11 +141,6 @@ function specificNextDeparturesCallback(data) {
         routeLongName = sndJSON.values[0]["platform"]["direction"]["direction_name"];
         stopName = sndJSON.values[0]["platform"]["stop"]["location_name"];
         stopName = stopName.replace("/", " / ");
-
-        // Strip off the stop number if tram
-        // if(sndJSON.values[0]["platform"]["stop"]["transport_type"]==="tram") {
-        //     stopName = stopName.substring(0, stopName.indexOf('#')-1);
-        // }
 
         // Get the realtime departures
         departureTime1 = sndJSON.values[0]["time_realtime_utc"];
@@ -132,10 +156,6 @@ function specificNextDeparturesCallback(data) {
         departureTime1 = new Date(departureTime1);
         departureTime2 = new Date(departureTime2);
         departureTime3 = new Date(departureTime3);
-
-        //console.log(departureTime1);
-        //console.log(departureTime2);
-        //console.log(departureTime3);
 
         // Convert to ms sice epoch
         departureTime1 = departureTime1.getTime()/1000;
@@ -237,22 +257,53 @@ function getPTVData() {
 // Event listeners
 Pebble.addEventListener('ready', function (e) {
     console.log('JS connected!');
+    stopIndexIncrement = 1;
     // localStorage.clear();
 });
 
 // Message from the watch to get the PT data from the API
 Pebble.addEventListener('appmessage', function (e) {
-    console.log('App message received! ');
+    switch(e.payload["KEY_MSG_TYPE"]) {
+        case GET_UPDATED_DEPARTURES:
+            console.log("Update departures");
+            // TODO: this will reset to the nearest stop but it shouldn't
+            getPTVData();
+            break;
+        case GET_NEXT_DIR:
+            console.log("Next direction");
+            var numDirections = localStorage['numDirections'];
+            var d = localStorage['direction'];
+            d = (numDirections - 1) - d;
+            localStorage.setItem('direction', d);
+            stopIndexIncrement = 1;
 
-    if(e.payload["KEY_MSG_TYPE"] == 2 ) {
-        // Toggle the direction for the next request
-        var numDirections = localStorage['numDirections'];
-        var d = localStorage['direction'];
-        d = (numDirections - 1) - d;
-        localStorage.setItem('direction', d);
+            getPTVData();
+            break;
+        case GET_NEAREST_STOP:
+            console.log("Nearest stop");
+            stopIndex = 0;
+
+            healthCheck();
+            break;
+        case GET_NEXT_STOP:
+            console.log("Next stop");
+            if(stopIndex < localConfig1.allStops.length) {
+                stopIndex++;
+            }
+            stopIndexIncrement = 1;
+
+            healthCheck();
+            break;
+        case GET_PREV_STOP:
+            console.log("Prev stop");
+            if(stopIndex > 0) {
+                stopIndex--;
+            }
+            stopIndexIncrement = -1;
+
+            healthCheck();
+            break;
     }
-
-    getPTVData()
 });
 
 // User has launched the config page
