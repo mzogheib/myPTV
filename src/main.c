@@ -146,6 +146,15 @@ static void click_config_provider(void *context) {
     window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
 }
 
+static void tap_handler(AccelAxisType axis, int32_t direction) {
+    // Request new PT times
+    if(persist_read_bool(CONFIG)) {
+        sendDict(GET_UPDATED_DEPARTURES);
+    } else {
+        display_alert(NO_CONFIG);
+    }
+}
+
 // Process the dictionary sent from the phone
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     // Assume no errors unless messages received otherwise
@@ -465,8 +474,11 @@ static void init(void) {
 
     // persist_delete(CONFIG);
 
-    // Subcribe to ticker
+    // Subscribe to ticker
     tick_timer_service_subscribe(MINUTE_UNIT, handle_tick);
+
+    // Subscribe to accelerometer
+    accel_tap_service_subscribe(tap_handler);
 
     // Register callbacks
     app_message_register_inbox_received(inbox_received_callback);
