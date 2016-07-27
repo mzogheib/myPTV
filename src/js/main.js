@@ -12,10 +12,6 @@ const ON_SELECT_LONG = 22;
 const ON_DOWN_SINGLE = 30;
 const ON_TAP = 40;
 
-const ERR_LOC = 90;
-const ERR_TIMEOUT = 91;
-const ERR_HEALTH = 93;
-
 // Send a dictionary of data to the Pebble
 function sendDict(dictionary) {
     // Send
@@ -51,9 +47,8 @@ function callPTVAPI(finalURL, callback) {
     }
 
     xhr.ontimeout = function () {
-        // Return a bad health check result to the watch
         var dictionary = {
-            "KEY_ALERT": ERR_TIMEOUT
+            "KEY_ALERT": "URL Timeout"
         };
         sendDict(dictionary);
     }
@@ -96,9 +91,8 @@ function healthCheckCallback(data) {
             localConfig1.limit
         );
     } else {
-        // Return a bad health check result to the watch
         var dictionary = {
-            "KEY_ALERT": ERR_HEALTH
+            "KEY_ALERT": "PTV Unhealthy"
         };
         sendDict(dictionary);
     }
@@ -232,10 +226,8 @@ function locationSuccess(pos) {
 
 // If cannot get location then don't send anything back.
 function locationError(err) {
-    console.warn('location error (' + err.code + '): ' + err.message);
-    // Send a location timeout error message back to display default text
     var dictionary = {
-        "KEY_ALERT": ERR_LOC
+        "KEY_ALERT": "Location error"
     };
     sendDict(dictionary);
 }

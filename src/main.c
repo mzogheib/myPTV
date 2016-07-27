@@ -57,11 +57,6 @@
 #define ON_DOWN_SINGLE 30
 #define ON_TAP 40
 
-#define ERR_LOC 90
-#define ERR_TIMEOUT 91
-#define NO_CONFIG 92
-#define ERR_HEALTH 93
-
 // Local storage keys
 #define CONFIG 1
 
@@ -92,47 +87,27 @@ static bool first_launch;
 
 /* Function Prototypes */
 static void display_pt_times();
-static void display_alert(int alert);
-static void send_dict(int msg_type);
+static void display_alert(char *alert);
+static void check_config_send_dict(int msg_type);
 
 static void up_single_click_handler(ClickRecognizerRef recognizer, void *context) {
-    if(persist_read_bool(CONFIG)) {
-        send_dict(ON_UP_SINGLE);
-    } else {
-        display_alert(NO_CONFIG);
-    }
+    check_config_send_dict(ON_UP_SINGLE);
 }
 
 static void select_single_click_handler(ClickRecognizerRef recognizer, void *context) {
-    if(persist_read_bool(CONFIG)) {
-        send_dict(ON_SELECT_SINGLE);
-    } else {
-        display_alert(NO_CONFIG);
-    }
+    check_config_send_dict(ON_SELECT_SINGLE);
 }
 
 static void select_multi_click_handler(ClickRecognizerRef recognizer, void *context) {
-    if(persist_read_bool(CONFIG)) {
-        send_dict(ON_SELECT_DOUBLE);
-    } else {
-        display_alert(NO_CONFIG);
-    }
+    check_config_send_dict(ON_SELECT_DOUBLE);
 }
 
 static void select_long_click_handler(ClickRecognizerRef recognizer, void *context) {
-    if(persist_read_bool(CONFIG)) {
-        send_dict(ON_SELECT_LONG);
-    } else {
-        display_alert(NO_CONFIG);
-    }
+    check_config_send_dict(ON_SELECT_LONG);
 }
 
 static void down_single_click_handler(ClickRecognizerRef recognizer, void *context) {
-    if(persist_read_bool(CONFIG)) {
-        send_dict(ON_DOWN_SINGLE);
-    } else {
-        display_alert(NO_CONFIG);
-    }
+    check_config_send_dict(ON_DOWN_SINGLE);
 }
 
 static void click_config_provider(void *context) {
@@ -146,17 +121,12 @@ static void click_config_provider(void *context) {
 }
 
 static void tap_handler(AccelAxisType axis, int32_t direction) {
-    // Request new PT times
-    if(persist_read_bool(CONFIG)) {
-        send_dict(ON_TAP);
-    } else {
-        display_alert(NO_CONFIG);
-    }
+    check_config_send_dict(ON_TAP);
 }
 
 // Process the dictionary sent from the phone
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
-    // Assume no errors unless messages received otherwise
+    // Assume no alerts unless messages received otherwise
     bool alert = false;
 
     // Read first item
@@ -191,17 +161,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
             // Error/alert handling
             case KEY_ALERT:
                 alert = true;
-                switch(t->value->uint8) {
-                    case ERR_LOC:
-                        display_alert(ERR_LOC);
-                        break;
-                    case ERR_TIMEOUT:
-                        display_alert(ERR_TIMEOUT);
-                        break;
-                    case ERR_HEALTH:
-                        display_alert(ERR_HEALTH);
-                        break;
-                }
+                display_alert(t->value->cstring);
                 break;
             default:
                 APP_LOG(APP_LOG_LEVEL_ERROR, "Key %d not recognized!", (int)t->key);
@@ -228,30 +188,14 @@ static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResul
 static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
 }
 
-static void display_alert(int alert) {
+static void display_alert(char *alert) {
     text_layer_set_text(text_layer_pt_route_short, "");
     text_layer_set_text(text_layer_pt_route_long, "");
     text_layer_set_text(text_layer_pt_stop, "");
     text_layer_set_text(text_layer_pt_departures_1, "");
     text_layer_set_text(text_layer_pt_departures_2_3, "");
-    switch(alert){
-        case NO_CONFIG:
-            text_layer_set_text(text_layer_alert, "No config.");
-            APP_LOG(APP_LOG_LEVEL_ERROR, "No config.");
-            break;
-        case ERR_LOC:
-            text_layer_set_text(text_layer_alert, "Location error.");
-            APP_LOG(APP_LOG_LEVEL_ERROR, "Location error.");
-            break;
-        case ERR_TIMEOUT:
-            text_layer_set_text(text_layer_alert, "Timeout.");
-            APP_LOG(APP_LOG_LEVEL_ERROR, "Timeout.");
-            break;
-        case ERR_HEALTH:
-            text_layer_set_text(text_layer_alert, "PTV unhealthy.");
-            APP_LOG(APP_LOG_LEVEL_ERROR, "PTV unhealthy.");
-            break;
-    }
+    text_layer_set_text(text_layer_alert, alert);
+    APP_LOG(APP_LOG_LEVEL_ERROR, "%s", alert);
 }
 
 static void display_pt_times() {
@@ -315,14 +259,19 @@ static void send_dict(int msg) {
     app_message_outbox_send();
 }
 
-// Run this function at every tick of the clock, i.e. second or minute
-static void handle_tick(struct tm *tick_time, TimeUnits units){
+// Send dict only if config exists
+static void check_config_send_dict(int msg) {
     if(persist_read_bool(CONFIG)) {
-        send_dict(first_launch ? ON_LAUNCH : ON_TICK);
+        send_dict(msg);
         first_launch = false;
     } else {
-        display_alert(NO_CONFIG);
+        display_alert("No config");
     }
+}
+
+// Run this function at every tick of the clock, i.e. second or minute
+static void handle_tick(struct tm *tick_time, TimeUnits units){
+    check_config_send_dict(first_launch ? ON_LAUNCH : ON_TICK);
 }
 
 // Convenience function to create a text layer
