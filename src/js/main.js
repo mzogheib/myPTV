@@ -1,17 +1,7 @@
-// Some variables
-var baseURL = 'http://timetableapi.ptv.vic.gov.au';
-var apiVersion = '/v2';
-
 // PT to look up
 var localConfig1 = {};
-var stopDistances1 = [];
 
-var routeShortName, routeLongName;
-var stopIndex, stopIndexIncrement, stopName;
-var directionName1, directionName2;
-var departureTime1, departureTime2, departureTime3;
-
-var healthCheckComplete = false;
+var stopIndex, stopIndexIncrement;
 
 const GET_NEAREST_STOP = 1;
 const GET_NEXT_STOP = 2;
@@ -34,7 +24,9 @@ function sendDict(dictionary) {
 }
 
 // Returns the complete API URL with calculated signature
-function getURLWithSignature(baseURL, params, devID, key) {
+function getURLWithSignature(params, devID, key) {
+    var baseURL = 'http://timetableapi.ptv.vic.gov.au';
+    var apiVersion = '/v2';
     var endPoint = apiVersion + params + '&devid=' + devID;
     var signature = CryptoJS.HmacSHA1(endPoint, key);
 
@@ -70,7 +62,7 @@ function callPTVAPI(finalURL, callback) {
 function healthCheck() {
     var date = new Date();
     var params = '/healthcheck?timestamp=' + date.toISOString();
-    var finalURL = getURLWithSignature(baseURL, params, devID, key);
+    var finalURL = getURLWithSignature(params, devID, key);
 
     // Call the API and provide a callback to handle the return data
     callPTVAPI(finalURL, healthCheckCallback);
@@ -135,6 +127,9 @@ function specificNextDeparturesCallback(data) {
         );
     } else {
         // Found departures. Send to watch.
+        var routeShortName, routeLongName;
+        var departureTime1, departureTime2, departureTime3;
+        var stopName;
 
         // Use objects and loops for this.
         routeShortName = sndJSON.values[0]["platform"]["direction"]["line"]["line_number"];
@@ -177,7 +172,7 @@ function specificNextDeparturesCallback(data) {
 
 function specificNextDepartures(mode, line, stop, direction, limit) {
     var params = '/mode/' + mode + '/line/' + line + '/stop/' + stop + '/directionid/' + direction + '/departures/all/limit/' + limit + '?';
-    var finalURL = getURLWithSignature(baseURL, params, devID, key);
+    var finalURL = getURLWithSignature(params, devID, key);
     callPTVAPI(finalURL, specificNextDeparturesCallback);
 }
 

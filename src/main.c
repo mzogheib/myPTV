@@ -52,8 +52,6 @@
 #define KEY_DEPARTURE_2 15
 #define KEY_DEPARTURE_3 16
 
-#define GET_HEALTH 8
-
 #define ERR_LOC 90
 #define ERR_TIMEOUT 91
 #define NO_CONFIG 92
@@ -83,12 +81,10 @@ static char string_stop[40];
 static char string_departure_1[] = "0000mins", string_departure_2[] = "0000mins", string_departure_3[] = "0000mins";
 static char string_departure_2_3[] = "0000mins, 0000mins";
 static int epoch_departure_1, epoch_departure_2, epoch_departure_3;
-static int health_status;
 
 /* Function Prototypes */
 static void display_pt_times();
 static void display_alert(int alert);
-static void write_time(struct tm tick_time, char *buffer);
 static void sendDict(int msg_type);
 
 static void select_single_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -163,8 +159,6 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     // Read first item
     Tuple *t = dict_read_first(iterator);
 
-    // Assume health status ok unless a message is received
-    health_status = 1;
     // Receiving a message implies config has been selected so updated local storage
     persist_write_bool(CONFIG, true);
 
@@ -317,24 +311,6 @@ static void sendDict(int msg) {
 
     // Send the message!
     app_message_outbox_send();
-}
-
-// Returns the time
-static void write_time(struct tm tick_time, char *buffer) {
-
-    // Write the current hours and minutes into the buffer
-    if(clock_is_24h_style() == true) {
-        // Use 24 hour format
-        strftime(buffer, sizeof("00:00"), "%H:%M", &tick_time);
-    } else {
-        // Use 12 hour format
-        strftime(buffer, sizeof("00:00"), "%I:%M", &tick_time);
-    }
-
-    // Strip leading zero
-    if(buffer[0]=='0') strcpy(buffer, buffer+1);
-
-    // APP_LOG(APP_LOG_LEVEL_INFO, "Buffer: %s", buffer);
 }
 
 // Run this function at every tick of the clock, i.e. second or minute
