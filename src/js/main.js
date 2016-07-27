@@ -251,14 +251,23 @@ Pebble.addEventListener('ready', function (e) {
 Pebble.addEventListener('appmessage', function (e) {
     switch(e.payload["KEY_EVENT"]) {
         case ON_LAUNCH:
-            console.log("ON_LAUNCH: Get departures at nearest stop");
             // Load the config data.
             localConfig1 = JSON.parse(localStorage.getItem('localConfig1'));
-            // Health check, get location, get departures at nearest stop
-            healthCheck();
+
+            if(localConfig1) {
+                console.log("ON_LAUNCH: Get departures at nearest stop");
+                // Health check, get location, get departures at nearest stop
+                healthCheck();
+            } else {
+                var dictionary = {
+                    "KEY_ALERT": "No config"
+                };
+                sendDict(dictionary);
+            }
             break;
         case ON_TICK:
             console.log("ON_TICK: Update departures at current stop");
+            var d = localStorage['direction'];
             specificNextDepartures(
                 localConfig1.modeID,
                 localConfig1.routeID,
@@ -284,6 +293,7 @@ Pebble.addEventListener('appmessage', function (e) {
             }
             stopIndexIncrement = 1;
 
+            var d = localStorage['direction'];
             specificNextDepartures(
                 localConfig1.modeID,
                 localConfig1.routeID,
@@ -299,6 +309,7 @@ Pebble.addEventListener('appmessage', function (e) {
             }
             stopIndexIncrement = -1;
 
+            var d = localStorage['direction'];
             specificNextDepartures(
                 localConfig1.modeID,
                 localConfig1.routeID,
@@ -314,6 +325,7 @@ Pebble.addEventListener('appmessage', function (e) {
             break;
         case ON_DOWN_SINGLE:
             console.log("ON_DOWN_SINGLE: Update departures at current stop");
+            var d = localStorage['direction'];
             specificNextDepartures(
                 localConfig1.modeID,
                 localConfig1.routeID,

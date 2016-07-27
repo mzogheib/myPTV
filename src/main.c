@@ -132,15 +132,14 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     // Read first item
     Tuple *t = dict_read_first(iterator);
 
-    // Receiving a message implies config has been selected so updated local storage
-    persist_write_bool(CONFIG, true);
-
     // For all items
     while(t != NULL) {
         // Which key was received?
         switch(t->key) {
             // Received from the PTV API
             case KEY_ROUTE_SHORT:
+                // Receiving a message with departures implies config has been selected so update local storage
+                persist_write_bool(CONFIG, true);
                 strcpy(string_route_short, t->value->cstring);
                 break;
             case KEY_ROUTE_LONG:
