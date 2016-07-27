@@ -3,11 +3,14 @@ var localConfig1 = {};
 
 var stopIndex, stopIndexIncrement;
 
-const GET_NEAREST_STOP = 1;
-const GET_NEXT_STOP = 2;
-const GET_PREV_STOP = 3;
-const GET_NEXT_DIR = 4;
-const GET_UPDATED_DEPARTURES = 5;
+const ON_LAUNCH = 0;
+const ON_TICK = 1;
+const ON_UP_SINGLE = 10;
+const ON_SELECT_SINGLE = 20;
+const ON_SELECT_DOUBLE = 21;
+const ON_SELECT_LONG = 22;
+const ON_DOWN_SINGLE = 30;
+const ON_TAP = 40;
 
 const ERR_LOC = 90;
 const ERR_TIMEOUT = 91;
@@ -50,7 +53,7 @@ function callPTVAPI(finalURL, callback) {
     xhr.ontimeout = function () {
         // Return a bad health check result to the watch
         var dictionary = {
-            "KEY_MSG_TYPE": ERR_TIMEOUT
+            "KEY_ALERT": ERR_TIMEOUT
         };
         sendDict(dictionary);
     }
@@ -95,7 +98,7 @@ function healthCheckCallback(data) {
     } else {
         // Return a bad health check result to the watch
         var dictionary = {
-            "KEY_MSG_TYPE": ERR_HEALTH
+            "KEY_ALERT": ERR_HEALTH
         };
         sendDict(dictionary);
     }
@@ -232,7 +235,7 @@ function locationError(err) {
     console.warn('location error (' + err.code + '): ' + err.message);
     // Send a location timeout error message back to display default text
     var dictionary = {
-        "KEY_MSG_TYPE": ERR_LOC
+        "KEY_ALERT": ERR_LOC
     };
     sendDict(dictionary);
 }
@@ -258,14 +261,17 @@ Pebble.addEventListener('ready', function (e) {
 
 // Message from the watch to get the PT data from the API
 Pebble.addEventListener('appmessage', function (e) {
-    switch(e.payload["KEY_MSG_TYPE"]) {
-        case GET_UPDATED_DEPARTURES:
-            console.log("Update departures");
-            // TODO: this will reset to the nearest stop but it shouldn't
+    switch(e.payload["KEY_EVENT"]) {
+        case ON_LAUNCH:
+            console.log("ON_LAUNCH: Update departures");
             getPTVData();
             break;
-        case GET_NEXT_DIR:
-            console.log("Next direction");
+        case ON_TICK:
+            console.log("ON_TICK: Update departures");
+            getPTVData();
+            break;
+        case ON_UP_SINGLE:
+            console.log("ON_UP_SINGLE: Next direction");
             var numDirections = localStorage['numDirections'];
             var d = localStorage['direction'];
             d = (numDirections - 1) - d;
@@ -274,14 +280,8 @@ Pebble.addEventListener('appmessage', function (e) {
 
             getPTVData();
             break;
-        case GET_NEAREST_STOP:
-            console.log("Nearest stop");
-            stopIndex = 0;
-
-            healthCheck();
-            break;
-        case GET_NEXT_STOP:
-            console.log("Next stop");
+        case ON_SELECT_SINGLE:
+            console.log("ON_SELECT_SINGLE: Next stop");
             if(stopIndex < localConfig1.allStops.length) {
                 stopIndex++;
             }
@@ -289,14 +289,28 @@ Pebble.addEventListener('appmessage', function (e) {
 
             healthCheck();
             break;
-        case GET_PREV_STOP:
-            console.log("Prev stop");
+        case ON_SELECT_DOUBLE:
+            console.log("ON_SELECT_DOUBLE: Prev stop");
             if(stopIndex > 0) {
                 stopIndex--;
             }
             stopIndexIncrement = -1;
 
             healthCheck();
+            break;
+        case ON_SELECT_LONG:
+            console.log("ON_SELECT_LONG: Nearest stop");
+            stopIndex = 0;
+
+            healthCheck();
+            break;
+        case ON_DOWN_SINGLE:
+            console.log("ON_DOWN_SINGLE: Update departures");
+            getPTVData();
+            break;
+        case ON_TAP:
+            console.log("ON_TAP: Update departures");
+            getPTVData();
             break;
     }
 });
@@ -333,6 +347,7 @@ Pebble.addEventListener('webviewclosed', function(e) {
         localStorage.setItem('direction', 0);
 
         // Get and send the PTV data
+        console.log("ON_NEW_CONFIG: Update departures");
         getPTVData();
     } else {
         console.log("Config cancelled");
