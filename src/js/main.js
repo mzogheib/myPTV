@@ -82,14 +82,7 @@ function healthCheckCallback(data) {
     // Handle the health check status
     if(healthCheckStatus) {
         // Carry on with getting PTV data
-        var d = localStorage['direction'];
-        specificNextDepartures(
-            localConfig1.modeID,
-            localConfig1.routeID,
-            localConfig1.allStops[stopIndex].stopID,
-            localConfig1.directionID[d],
-            localConfig1.limit
-        );
+        getLocationAndDepartures();
     } else {
         var dictionary = {
             "KEY_ALERT": "PTV Unhealthy"
@@ -198,8 +191,8 @@ function distance(fromLat, fromLon, toLat, toLon) {
     return radius * angle;
 }
 
-// If can get location then do things
-function locationSuccess(pos) {
+// Find the nearest stop and get the departures for it
+function departuresAtNearestStop(pos) {
     var coordinates = pos.coords;
 
     // Calculate and save the distance from current location to each stop
@@ -217,11 +210,16 @@ function locationSuccess(pos) {
         var lon = stops[i].stopLon;
     }
 
+    // Get departures for the nearest stop
     stopIndex = 0;
-
-    // Get departures for this stop
-    // Check API health then either call the other APIs or send alert back to Pebble
-    healthCheck();
+    var d = localStorage['direction'];
+    specificNextDepartures(
+        localConfig1.modeID,
+        localConfig1.routeID,
+        localConfig1.allStops[stopIndex].stopID,
+        localConfig1.directionID[d],
+        localConfig1.limit
+    );
 }
 
 // If cannot get location then don't send anything back.
@@ -237,11 +235,9 @@ var locationOptions = {
     'maximumAge': 60000
 };
 
-function getPTVData() {
-    // Load the config data.
-    localConfig1 = JSON.parse(localStorage.getItem('localConfig1'));
+function getLocationAndDepartures() {
     // Find the current position. Get the closest stop and departures within the locationSuccess callback
-    window.navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
+    window.navigator.geolocation.getCurrentPosition(departuresAtNearestStop, locationError, locationOptions);
 }
 
 // Event listeners
@@ -255,54 +251,80 @@ Pebble.addEventListener('ready', function (e) {
 Pebble.addEventListener('appmessage', function (e) {
     switch(e.payload["KEY_EVENT"]) {
         case ON_LAUNCH:
-            console.log("ON_LAUNCH: Update departures");
-            getPTVData();
+            console.log("ON_LAUNCH: Get departures at nearest stop");
+            // Load the config data.
+            localConfig1 = JSON.parse(localStorage.getItem('localConfig1'));
+            // Health check, get location, get departures at nearest stop
+            healthCheck();
             break;
         case ON_TICK:
-            console.log("ON_TICK: Update departures");
-            getPTVData();
+            console.log("ON_TICK: Update departures at current stop");
+            specificNextDepartures(
+                localConfig1.modeID,
+                localConfig1.routeID,
+                localConfig1.allStops[stopIndex].stopID,
+                localConfig1.directionID[d],
+                localConfig1.limit
+            );
             break;
         case ON_UP_SINGLE:
-            console.log("ON_UP_SINGLE: Next direction");
+            console.log("ON_UP_SINGLE: Get departures in next direction at nearest stop");
             var numDirections = localStorage['numDirections'];
             var d = localStorage['direction'];
             d = (numDirections - 1) - d;
             localStorage.setItem('direction', d);
             stopIndexIncrement = 1;
 
-            getPTVData();
+            getLocationAndDepartures();
             break;
         case ON_SELECT_SINGLE:
-            console.log("ON_SELECT_SINGLE: Next stop");
+            console.log("ON_SELECT_SINGLE: Get departures at next stop");
             if(stopIndex < localConfig1.allStops.length) {
                 stopIndex++;
             }
             stopIndexIncrement = 1;
 
-            healthCheck();
+            specificNextDepartures(
+                localConfig1.modeID,
+                localConfig1.routeID,
+                localConfig1.allStops[stopIndex].stopID,
+                localConfig1.directionID[d],
+                localConfig1.limit
+            );
             break;
         case ON_SELECT_DOUBLE:
-            console.log("ON_SELECT_DOUBLE: Prev stop");
+            console.log("ON_SELECT_DOUBLE: Get departures at previous stop");
             if(stopIndex > 0) {
                 stopIndex--;
             }
             stopIndexIncrement = -1;
 
-            healthCheck();
+            specificNextDepartures(
+                localConfig1.modeID,
+                localConfig1.routeID,
+                localConfig1.allStops[stopIndex].stopID,
+                localConfig1.directionID[d],
+                localConfig1.limit
+            );
             break;
         case ON_SELECT_LONG:
-            console.log("ON_SELECT_LONG: Nearest stop");
+            console.log("ON_SELECT_LONG: Get departures at nearest stop");
             stopIndex = 0;
-
-            healthCheck();
+            getLocationAndDepartures();
             break;
         case ON_DOWN_SINGLE:
-            console.log("ON_DOWN_SINGLE: Update departures");
-            getPTVData();
+            console.log("ON_DOWN_SINGLE: Update departures at current stop");
+            specificNextDepartures(
+                localConfig1.modeID,
+                localConfig1.routeID,
+                localConfig1.allStops[stopIndex].stopID,
+                localConfig1.directionID[d],
+                localConfig1.limit
+            );
             break;
         case ON_TAP:
-            console.log("ON_TAP: Update departures");
-            getPTVData();
+            console.log("ON_TAP: Get departures at nearest stop");
+            getLocationAndDepartures();
             break;
     }
 });
@@ -339,8 +361,8 @@ Pebble.addEventListener('webviewclosed', function(e) {
         localStorage.setItem('direction', 0);
 
         // Get and send the PTV data
-        console.log("ON_NEW_CONFIG: Update departures");
-        getPTVData();
+        console.log("ON_NEW_CONFIG: Get departures at nearest stop");
+        getLocationAndDepartures();
     } else {
         console.log("Config cancelled");
     }
