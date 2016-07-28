@@ -38,13 +38,8 @@
 #define TEXT_LAYER_PADDING 2
 
 // Dictionary keys
-#define KEY_MSG_TYPE 0
-#define GET_NEAREST_STOP 1
-#define GET_NEXT_STOP 2
-#define GET_PREV_STOP 3
-#define GET_NEXT_DIR 4
-#define GET_UPDATED_DEPARTURES 5
-
+#define KEY_EVENT 0
+#define KEY_ALERT 1
 #define KEY_ROUTE_SHORT 10
 #define KEY_ROUTE_LONG 11
 #define KEY_STOP 12
@@ -52,12 +47,15 @@
 #define KEY_DEPARTURE_2 15
 #define KEY_DEPARTURE_3 16
 
-#define GET_HEALTH 8
-
-#define ERR_LOC 90
-#define ERR_TIMEOUT 91
-#define NO_CONFIG 92
-#define ERR_HEALTH 93
+// Event & alert types
+#define ON_LAUNCH 0
+#define ON_TICK 1
+#define ON_UP_SINGLE 10
+#define ON_SELECT_SINGLE 20
+#define ON_SELECT_DOUBLE 21
+#define ON_SELECT_LONG 22
+#define ON_DOWN_SINGLE 30
+#define ON_TAP 40
 
 // Local storage keys
 #define CONFIG 1
@@ -83,90 +81,56 @@ static char string_stop[40];
 static char string_departure_1[] = "0000mins", string_departure_2[] = "0000mins", string_departure_3[] = "0000mins";
 static char string_departure_2_3[] = "0000mins, 0000mins";
 static int epoch_departure_1, epoch_departure_2, epoch_departure_3;
-static int health_status;
+
+// Other variables, flags etc
+static bool first_launch;
 
 /* Function Prototypes */
 static void display_pt_times();
-static void display_alert(int alert);
-static void write_time(struct tm tick_time, char *buffer);
-static void sendDict(int msg_type);
+static void display_alert(char *alert);
+static void check_config_send_dict(int msg_type);
+
+static void up_single_click_handler(ClickRecognizerRef recognizer, void *context) {
+    check_config_send_dict(ON_UP_SINGLE);
+}
 
 static void select_single_click_handler(ClickRecognizerRef recognizer, void *context) {
-    // Next nearest stop
-    if(persist_read_bool(CONFIG)) {
-        sendDict(GET_NEXT_STOP);
-    } else {
-        display_alert(NO_CONFIG);
-    }
+    check_config_send_dict(ON_SELECT_SINGLE);
 }
 
 static void select_multi_click_handler(ClickRecognizerRef recognizer, void *context) {
-    // Previous nearest stop
-    if(persist_read_bool(CONFIG)) {
-        sendDict(GET_PREV_STOP);
-    } else {
-        display_alert(NO_CONFIG);
-    }
+    check_config_send_dict(ON_SELECT_DOUBLE);
 }
 
 static void select_long_click_handler(ClickRecognizerRef recognizer, void *context) {
-    // Nearest stop
-    if(persist_read_bool(CONFIG)) {
-        sendDict(GET_NEAREST_STOP);
-    } else {
-        display_alert(NO_CONFIG);
-    }
+    check_config_send_dict(ON_SELECT_LONG);
 }
 
-static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
-    // Change directions
-    if(persist_read_bool(CONFIG)) {
-        sendDict(GET_NEXT_DIR);
-    } else {
-        display_alert(NO_CONFIG);
-    }
-}
-
-static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
-    // Update departures
-    if(persist_read_bool(CONFIG)) {
-        sendDict(GET_UPDATED_DEPARTURES);
-    } else {
-        display_alert(NO_CONFIG);
-    }
+static void down_single_click_handler(ClickRecognizerRef recognizer, void *context) {
+    check_config_send_dict(ON_DOWN_SINGLE);
 }
 
 static void click_config_provider(void *context) {
+    window_single_click_subscribe(BUTTON_ID_UP, up_single_click_handler);
+
     window_single_click_subscribe(BUTTON_ID_SELECT, select_single_click_handler);
     window_multi_click_subscribe(BUTTON_ID_SELECT, 2, 0, 0, false, select_multi_click_handler);
     window_long_click_subscribe(BUTTON_ID_SELECT, 0, select_long_click_handler, 0);
 
-    window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
-
-    window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
+    window_single_click_subscribe(BUTTON_ID_DOWN, down_single_click_handler);
 }
 
 static void tap_handler(AccelAxisType axis, int32_t direction) {
-    // Request new PT times
-    if(persist_read_bool(CONFIG)) {
-        sendDict(GET_UPDATED_DEPARTURES);
-    } else {
-        display_alert(NO_CONFIG);
-    }
+    check_config_send_dict(ON_TAP);
 }
 
 // Process the dictionary sent from the phone
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
-    // Assume no errors unless messages received otherwise
+    // Assume no alerts unless messages received otherwise
     bool alert = false;
 
     // Read first item
     Tuple *t = dict_read_first(iterator);
-
-    // Assume health status ok unless a message is received
-    health_status = 1;
-    // Receiving a message implies config has been selected so updated local storage
-    persist_write_bool(CONFIG, true);
 
     // For all items
     while(t != NULL) {
@@ -174,6 +138,8 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
         switch(t->key) {
             // Received from the PTV API
             case KEY_ROUTE_SHORT:
+                // Receiving a message with departures implies config has been selected so update local storage
+                persist_write_bool(CONFIG, true);
                 strcpy(string_route_short, t->value->cstring);
                 break;
             case KEY_ROUTE_LONG:
@@ -192,19 +158,9 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
                 epoch_departure_3 = t->value->int32;
                 break;
             // Error/alert handling
-            case KEY_MSG_TYPE:
+            case KEY_ALERT:
                 alert = true;
-                switch(t->value->uint8) {
-                    case ERR_LOC:
-                        display_alert(ERR_LOC);
-                        break;
-                    case ERR_TIMEOUT:
-                        display_alert(ERR_TIMEOUT);
-                        break;
-                    case ERR_HEALTH:
-                        display_alert(ERR_HEALTH);
-                        break;
-                }
+                display_alert(t->value->cstring);
                 break;
             default:
                 APP_LOG(APP_LOG_LEVEL_ERROR, "Key %d not recognized!", (int)t->key);
@@ -231,35 +187,18 @@ static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResul
 static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
 }
 
-static void display_alert(int alert) {
+static void display_alert(char *alert) {
     text_layer_set_text(text_layer_pt_route_short, "");
     text_layer_set_text(text_layer_pt_route_long, "");
     text_layer_set_text(text_layer_pt_stop, "");
     text_layer_set_text(text_layer_pt_departures_1, "");
     text_layer_set_text(text_layer_pt_departures_2_3, "");
-    switch(alert){
-        case NO_CONFIG:
-            text_layer_set_text(text_layer_alert, "No config.");
-            APP_LOG(APP_LOG_LEVEL_ERROR, "No config.");
-            break;
-        case ERR_LOC:
-            text_layer_set_text(text_layer_alert, "Location error.");
-            APP_LOG(APP_LOG_LEVEL_ERROR, "Location error.");
-            break;
-        case ERR_TIMEOUT:
-            text_layer_set_text(text_layer_alert, "Timeout.");
-            APP_LOG(APP_LOG_LEVEL_ERROR, "Timeout.");
-            break;
-        case ERR_HEALTH:
-            text_layer_set_text(text_layer_alert, "PTV unhealthy.");
-            APP_LOG(APP_LOG_LEVEL_ERROR, "PTV unhealthy.");
-            break;
-    }
+    text_layer_set_text(text_layer_alert, alert);
+    APP_LOG(APP_LOG_LEVEL_ERROR, "%s", alert);
 }
 
 static void display_pt_times() {
-
-    // Clear any warnings
+    // Clear any alerts
     text_layer_set_text(text_layer_alert, "");
 
     // Display the route names
@@ -306,45 +245,32 @@ static void display_pt_times() {
 }
 
 // Send dict to phone and do something
-static void sendDict(int msg) {
+static void send_dict(int msg) {
     DictionaryIterator *dict;
 
     // Begin dictionary
     app_message_outbox_begin(&dict);
 
     // Add a key-value pair for each parameter
-    dict_write_int8(dict, KEY_MSG_TYPE, msg);
+    dict_write_int8(dict, KEY_EVENT, msg);
 
     // Send the message!
     app_message_outbox_send();
 }
 
-// Returns the time
-static void write_time(struct tm tick_time, char *buffer) {
-
-    // Write the current hours and minutes into the buffer
-    if(clock_is_24h_style() == true) {
-        // Use 24 hour format
-        strftime(buffer, sizeof("00:00"), "%H:%M", &tick_time);
+// Send dict only if config exists
+static void check_config_send_dict(int msg) {
+    if(persist_read_bool(CONFIG)) {
+        send_dict(msg);
+        first_launch = false;
     } else {
-        // Use 12 hour format
-        strftime(buffer, sizeof("00:00"), "%I:%M", &tick_time);
+        display_alert("No config");
     }
-
-    // Strip leading zero
-    if(buffer[0]=='0') strcpy(buffer, buffer+1);
-
-    // APP_LOG(APP_LOG_LEVEL_INFO, "Buffer: %s", buffer);
 }
 
 // Run this function at every tick of the clock, i.e. second or minute
 static void handle_tick(struct tm *tick_time, TimeUnits units){
-    // Request new PT times
-    if(persist_read_bool(CONFIG)) {
-        sendDict(GET_UPDATED_DEPARTURES);
-    } else {
-        display_alert(NO_CONFIG);
-    }
+    check_config_send_dict(first_launch ? ON_LAUNCH : ON_TICK);
 }
 
 // Convenience function to create a text layer
@@ -475,6 +401,7 @@ static void init(void) {
     // persist_delete(CONFIG);
 
     // Subscribe to ticker
+    first_launch = true;
     tick_timer_service_subscribe(MINUTE_UNIT, handle_tick);
 
     // Subscribe to accelerometer

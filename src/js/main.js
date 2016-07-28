@@ -1,27 +1,16 @@
-// Some variables
-var baseURL = 'http://timetableapi.ptv.vic.gov.au';
-var apiVersion = '/v2';
-
 // PT to look up
 var localConfig1 = {};
-var stopDistances1 = [];
 
-var routeShortName, routeLongName;
-var stopIndex, stopIndexIncrement, stopName;
-var directionName1, directionName2;
-var departureTime1, departureTime2, departureTime3;
+var stopIndex, stopIndexIncrement;
 
-var healthCheckComplete = false;
-
-const GET_NEAREST_STOP = 1;
-const GET_NEXT_STOP = 2;
-const GET_PREV_STOP = 3;
-const GET_NEXT_DIR = 4;
-const GET_UPDATED_DEPARTURES = 5;
-
-const ERR_LOC = 90;
-const ERR_TIMEOUT = 91;
-const ERR_HEALTH = 93;
+const ON_LAUNCH = 0;
+const ON_TICK = 1;
+const ON_UP_SINGLE = 10;
+const ON_SELECT_SINGLE = 20;
+const ON_SELECT_DOUBLE = 21;
+const ON_SELECT_LONG = 22;
+const ON_DOWN_SINGLE = 30;
+const ON_TAP = 40;
 
 // Send a dictionary of data to the Pebble
 function sendDict(dictionary) {
@@ -34,7 +23,9 @@ function sendDict(dictionary) {
 }
 
 // Returns the complete API URL with calculated signature
-function getURLWithSignature(baseURL, params, devID, key) {
+function getURLWithSignature(params, devID, key) {
+    var baseURL = 'http://timetableapi.ptv.vic.gov.au';
+    var apiVersion = '/v2';
     var endPoint = apiVersion + params + '&devid=' + devID;
     var signature = CryptoJS.HmacSHA1(endPoint, key);
 
@@ -56,9 +47,8 @@ function callPTVAPI(finalURL, callback) {
     }
 
     xhr.ontimeout = function () {
-        // Return a bad health check result to the watch
         var dictionary = {
-            "KEY_MSG_TYPE": ERR_TIMEOUT
+            "KEY_ALERT": "URL Timeout"
         };
         sendDict(dictionary);
     }
@@ -70,7 +60,7 @@ function callPTVAPI(finalURL, callback) {
 function healthCheck() {
     var date = new Date();
     var params = '/healthcheck?timestamp=' + date.toISOString();
-    var finalURL = getURLWithSignature(baseURL, params, devID, key);
+    var finalURL = getURLWithSignature(params, devID, key);
 
     // Call the API and provide a callback to handle the return data
     callPTVAPI(finalURL, healthCheckCallback);
@@ -92,18 +82,10 @@ function healthCheckCallback(data) {
     // Handle the health check status
     if(healthCheckStatus) {
         // Carry on with getting PTV data
-        var d = localStorage['direction'];
-        specificNextDepartures(
-            localConfig1.modeID,
-            localConfig1.routeID,
-            localConfig1.allStops[stopIndex].stopID,
-            localConfig1.directionID[d],
-            localConfig1.limit
-        );
+        getLocationAndDepartures();
     } else {
-        // Return a bad health check result to the watch
         var dictionary = {
-            "KEY_MSG_TYPE": ERR_HEALTH
+            "KEY_ALERT": "PTV Unhealthy"
         };
         sendDict(dictionary);
     }
@@ -135,6 +117,9 @@ function specificNextDeparturesCallback(data) {
         );
     } else {
         // Found departures. Send to watch.
+        var routeShortName, routeLongName;
+        var departureTime1, departureTime2, departureTime3;
+        var stopName;
 
         // Use objects and loops for this.
         routeShortName = sndJSON.values[0]["platform"]["direction"]["line"]["line_number"];
@@ -177,7 +162,7 @@ function specificNextDeparturesCallback(data) {
 
 function specificNextDepartures(mode, line, stop, direction, limit) {
     var params = '/mode/' + mode + '/line/' + line + '/stop/' + stop + '/directionid/' + direction + '/departures/all/limit/' + limit + '?';
-    var finalURL = getURLWithSignature(baseURL, params, devID, key);
+    var finalURL = getURLWithSignature(params, devID, key);
     callPTVAPI(finalURL, specificNextDeparturesCallback);
 }
 
@@ -206,8 +191,8 @@ function distance(fromLat, fromLon, toLat, toLon) {
     return radius * angle;
 }
 
-// If can get location then do things
-function locationSuccess(pos) {
+// Find the nearest stop and get the departures for it
+function departuresAtNearestStop(pos) {
     var coordinates = pos.coords;
 
     // Calculate and save the distance from current location to each stop
@@ -225,19 +210,22 @@ function locationSuccess(pos) {
         var lon = stops[i].stopLon;
     }
 
+    // Get departures for the nearest stop
     stopIndex = 0;
-
-    // Get departures for this stop
-    // Check API health then either call the other APIs or send alert back to Pebble
-    healthCheck();
+    var d = localStorage['direction'];
+    specificNextDepartures(
+        localConfig1.modeID,
+        localConfig1.routeID,
+        localConfig1.allStops[stopIndex].stopID,
+        localConfig1.directionID[d],
+        localConfig1.limit
+    );
 }
 
 // If cannot get location then don't send anything back.
 function locationError(err) {
-    console.warn('location error (' + err.code + '): ' + err.message);
-    // Send a location timeout error message back to display default text
     var dictionary = {
-        "KEY_MSG_TYPE": ERR_LOC
+        "KEY_ALERT": "Location error"
     };
     sendDict(dictionary);
 }
@@ -247,11 +235,9 @@ var locationOptions = {
     'maximumAge': 60000
 };
 
-function getPTVData() {
-    // Load the config data.
-    localConfig1 = JSON.parse(localStorage.getItem('localConfig1'));
+function getLocationAndDepartures() {
     // Find the current position. Get the closest stop and departures within the locationSuccess callback
-    window.navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
+    window.navigator.geolocation.getCurrentPosition(departuresAtNearestStop, locationError, locationOptions);
 }
 
 // Event listeners
@@ -263,45 +249,94 @@ Pebble.addEventListener('ready', function (e) {
 
 // Message from the watch to get the PT data from the API
 Pebble.addEventListener('appmessage', function (e) {
-    switch(e.payload["KEY_MSG_TYPE"]) {
-        case GET_UPDATED_DEPARTURES:
-            console.log("Update departures");
-            // TODO: this will reset to the nearest stop but it shouldn't
-            getPTVData();
+    switch(e.payload["KEY_EVENT"]) {
+        case ON_LAUNCH:
+            // Load the config data.
+            localConfig1 = JSON.parse(localStorage.getItem('localConfig1'));
+
+            if(localConfig1) {
+                console.log("ON_LAUNCH: Get departures at nearest stop");
+                // Health check, get location, get departures at nearest stop
+                healthCheck();
+            } else {
+                var dictionary = {
+                    "KEY_ALERT": "No config"
+                };
+                sendDict(dictionary);
+            }
             break;
-        case GET_NEXT_DIR:
-            console.log("Next direction");
+        case ON_TICK:
+            console.log("ON_TICK: Update departures at current stop");
+            var d = localStorage['direction'];
+            specificNextDepartures(
+                localConfig1.modeID,
+                localConfig1.routeID,
+                localConfig1.allStops[stopIndex].stopID,
+                localConfig1.directionID[d],
+                localConfig1.limit
+            );
+            break;
+        case ON_UP_SINGLE:
+            console.log("ON_UP_SINGLE: Get departures in next direction at nearest stop");
             var numDirections = localStorage['numDirections'];
             var d = localStorage['direction'];
             d = (numDirections - 1) - d;
             localStorage.setItem('direction', d);
             stopIndexIncrement = 1;
 
-            getPTVData();
+            getLocationAndDepartures();
             break;
-        case GET_NEAREST_STOP:
-            console.log("Nearest stop");
-            stopIndex = 0;
-
-            healthCheck();
-            break;
-        case GET_NEXT_STOP:
-            console.log("Next stop");
+        case ON_SELECT_SINGLE:
+            console.log("ON_SELECT_SINGLE: Get departures at next stop");
             if(stopIndex < localConfig1.allStops.length) {
                 stopIndex++;
             }
             stopIndexIncrement = 1;
 
-            healthCheck();
+            var d = localStorage['direction'];
+            specificNextDepartures(
+                localConfig1.modeID,
+                localConfig1.routeID,
+                localConfig1.allStops[stopIndex].stopID,
+                localConfig1.directionID[d],
+                localConfig1.limit
+            );
             break;
-        case GET_PREV_STOP:
-            console.log("Prev stop");
+        case ON_SELECT_DOUBLE:
+            console.log("ON_SELECT_DOUBLE: Get departures at previous stop");
             if(stopIndex > 0) {
                 stopIndex--;
             }
             stopIndexIncrement = -1;
 
-            healthCheck();
+            var d = localStorage['direction'];
+            specificNextDepartures(
+                localConfig1.modeID,
+                localConfig1.routeID,
+                localConfig1.allStops[stopIndex].stopID,
+                localConfig1.directionID[d],
+                localConfig1.limit
+            );
+            break;
+        case ON_SELECT_LONG:
+            console.log("ON_SELECT_LONG: Get departures at nearest stop");
+            stopIndex = 0;
+            getLocationAndDepartures();
+            break;
+        case ON_DOWN_SINGLE:
+            console.log("ON_DOWN_SINGLE: Update departures at current stop");
+            var d = localStorage['direction'];
+            specificNextDepartures(
+                localConfig1.modeID,
+                localConfig1.routeID,
+                localConfig1.allStops[stopIndex].stopID,
+                localConfig1.directionID[d],
+                localConfig1.limit
+            );
+            break;
+        case ON_TAP:
+            console.log("ON_TAP: Get departures at nearest stop");
+            getLocationAndDepartures();
             break;
     }
 });
@@ -338,7 +373,8 @@ Pebble.addEventListener('webviewclosed', function(e) {
         localStorage.setItem('direction', 0);
 
         // Get and send the PTV data
-        getPTVData();
+        console.log("ON_NEW_CONFIG: Get departures at nearest stop");
+        getLocationAndDepartures();
     } else {
         console.log("Config cancelled");
     }
