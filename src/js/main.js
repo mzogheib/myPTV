@@ -244,100 +244,102 @@ function getLocationAndDepartures() {
 Pebble.addEventListener('ready', function (e) {
     console.log('JS connected!');
     stopIndexIncrement = 1;
+
     // localStorage.clear();
+
+    // Load the config data.
+    localConfig1 = JSON.parse(localStorage.getItem('localConfig1'));
 });
 
 // Message from the watch to get the PT data from the API
 Pebble.addEventListener('appmessage', function (e) {
-    switch(e.payload["KEY_EVENT"]) {
-        case ON_LAUNCH:
-            // Load the config data.
-            localConfig1 = JSON.parse(localStorage.getItem('localConfig1'));
-
-            if(localConfig1) {
+    if(localConfig1) {
+        // If config exists then process incoming events
+        switch(e.payload["KEY_EVENT"]) {
+            case ON_LAUNCH:
                 console.log("ON_LAUNCH: Get departures at nearest stop");
                 // Health check, get location, get departures at nearest stop
                 healthCheck();
-            } else {
-                var dictionary = {
-                    "KEY_ALERT": "No config"
-                };
-                sendDict(dictionary);
-            }
-            break;
-        case ON_TICK:
-            console.log("ON_TICK: Update departures at current stop");
-            var d = localStorage['direction'];
-            specificNextDepartures(
-                localConfig1.modeID,
-                localConfig1.routeID,
-                localConfig1.allStops[stopIndex].stopID,
-                localConfig1.directionID[d],
-                localConfig1.limit
-            );
-            break;
-        case ON_UP_SINGLE:
-            console.log("ON_UP_SINGLE: Get departures in next direction at nearest stop");
-            var numDirections = localStorage['numDirections'];
-            var d = localStorage['direction'];
-            d = (numDirections - 1) - d;
-            localStorage.setItem('direction', d);
-            stopIndexIncrement = 1;
+                break;
+            case ON_TICK:
+                console.log("ON_TICK: Update departures at current stop");
+                var d = localStorage['direction'];
+                specificNextDepartures(
+                    localConfig1.modeID,
+                    localConfig1.routeID,
+                    localConfig1.allStops[stopIndex].stopID,
+                    localConfig1.directionID[d],
+                    localConfig1.limit
+                );
+                break;
+            case ON_UP_SINGLE:
+                console.log("ON_UP_SINGLE: Get departures in next direction at nearest stop");
+                var numDirections = localStorage['numDirections'];
+                var d = localStorage['direction'];
+                d = (numDirections - 1) - d;
+                localStorage.setItem('direction', d);
+                stopIndexIncrement = 1;
 
-            getLocationAndDepartures();
-            break;
-        case ON_SELECT_SINGLE:
-            console.log("ON_SELECT_SINGLE: Get departures at next stop");
-            if(stopIndex < localConfig1.allStops.length) {
-                stopIndex++;
-            }
-            stopIndexIncrement = 1;
+                getLocationAndDepartures();
+                break;
+            case ON_SELECT_SINGLE:
+                console.log("ON_SELECT_SINGLE: Get departures at next stop");
+                if(stopIndex < localConfig1.allStops.length) {
+                    stopIndex++;
+                }
+                stopIndexIncrement = 1;
 
-            var d = localStorage['direction'];
-            specificNextDepartures(
-                localConfig1.modeID,
-                localConfig1.routeID,
-                localConfig1.allStops[stopIndex].stopID,
-                localConfig1.directionID[d],
-                localConfig1.limit
-            );
-            break;
-        case ON_SELECT_DOUBLE:
-            console.log("ON_SELECT_DOUBLE: Get departures at previous stop");
-            if(stopIndex > 0) {
-                stopIndex--;
-            }
-            stopIndexIncrement = -1;
+                var d = localStorage['direction'];
+                specificNextDepartures(
+                    localConfig1.modeID,
+                    localConfig1.routeID,
+                    localConfig1.allStops[stopIndex].stopID,
+                    localConfig1.directionID[d],
+                    localConfig1.limit
+                );
+                break;
+            case ON_SELECT_DOUBLE:
+                console.log("ON_SELECT_DOUBLE: Get departures at previous stop");
+                if(stopIndex > 0) {
+                    stopIndex--;
+                }
+                stopIndexIncrement = -1;
 
-            var d = localStorage['direction'];
-            specificNextDepartures(
-                localConfig1.modeID,
-                localConfig1.routeID,
-                localConfig1.allStops[stopIndex].stopID,
-                localConfig1.directionID[d],
-                localConfig1.limit
-            );
-            break;
-        case ON_SELECT_LONG:
-            console.log("ON_SELECT_LONG: Get departures at nearest stop");
-            stopIndex = 0;
-            getLocationAndDepartures();
-            break;
-        case ON_DOWN_SINGLE:
-            console.log("ON_DOWN_SINGLE: Update departures at current stop");
-            var d = localStorage['direction'];
-            specificNextDepartures(
-                localConfig1.modeID,
-                localConfig1.routeID,
-                localConfig1.allStops[stopIndex].stopID,
-                localConfig1.directionID[d],
-                localConfig1.limit
-            );
-            break;
-        case ON_TAP:
-            console.log("ON_TAP: Get departures at nearest stop");
-            getLocationAndDepartures();
-            break;
+                var d = localStorage['direction'];
+                specificNextDepartures(
+                    localConfig1.modeID,
+                    localConfig1.routeID,
+                    localConfig1.allStops[stopIndex].stopID,
+                    localConfig1.directionID[d],
+                    localConfig1.limit
+                );
+                break;
+            case ON_SELECT_LONG:
+                console.log("ON_SELECT_LONG: Get departures at nearest stop");
+                stopIndex = 0;
+                getLocationAndDepartures();
+                break;
+            case ON_DOWN_SINGLE:
+                console.log("ON_DOWN_SINGLE: Update departures at current stop");
+                var d = localStorage['direction'];
+                specificNextDepartures(
+                    localConfig1.modeID,
+                    localConfig1.routeID,
+                    localConfig1.allStops[stopIndex].stopID,
+                    localConfig1.directionID[d],
+                    localConfig1.limit
+                );
+                break;
+            case ON_TAP:
+                console.log("ON_TAP: Get departures at nearest stop");
+                getLocationAndDepartures();
+                break;
+        }
+    } else {
+        var dictionary = {
+            "KEY_ALERT": "No config"
+        };
+        sendDict(dictionary);
     }
 });
 
