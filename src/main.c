@@ -57,9 +57,6 @@
 #define ON_DOWN_SINGLE 30
 #define ON_TAP 40
 
-// Local storage keys
-#define CONFIG 1
-
 static Window *window;
 static Layer *background_layer;
 
@@ -88,26 +85,26 @@ static bool first_launch;
 /* Function Prototypes */
 static void display_pt_times();
 static void display_alert(char *alert);
-static void check_config_send_dict(int msg_type);
+static void send_dict(int msg_type);
 
 static void up_single_click_handler(ClickRecognizerRef recognizer, void *context) {
-    check_config_send_dict(ON_UP_SINGLE);
+    send_dict(ON_UP_SINGLE);
 }
 
 static void select_single_click_handler(ClickRecognizerRef recognizer, void *context) {
-    check_config_send_dict(ON_SELECT_SINGLE);
+    send_dict(ON_SELECT_SINGLE);
 }
 
 static void select_multi_click_handler(ClickRecognizerRef recognizer, void *context) {
-    check_config_send_dict(ON_SELECT_DOUBLE);
+    send_dict(ON_SELECT_DOUBLE);
 }
 
 static void select_long_click_handler(ClickRecognizerRef recognizer, void *context) {
-    check_config_send_dict(ON_SELECT_LONG);
+    send_dict(ON_SELECT_LONG);
 }
 
 static void down_single_click_handler(ClickRecognizerRef recognizer, void *context) {
-    check_config_send_dict(ON_DOWN_SINGLE);
+    send_dict(ON_DOWN_SINGLE);
 }
 
 static void click_config_provider(void *context) {
@@ -121,7 +118,7 @@ static void click_config_provider(void *context) {
 }
 
 static void tap_handler(AccelAxisType axis, int32_t direction) {
-    check_config_send_dict(ON_TAP);
+    send_dict(ON_TAP);
 }
 
 // Process the dictionary sent from the phone
@@ -138,8 +135,6 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
         switch(t->key) {
             // Received from the PTV API
             case KEY_ROUTE_SHORT:
-                // Receiving a message with departures implies config has been selected so update local storage
-                persist_write_bool(CONFIG, true);
                 strcpy(string_route_short, t->value->cstring);
                 break;
             case KEY_ROUTE_LONG:
@@ -258,19 +253,10 @@ static void send_dict(int msg) {
     app_message_outbox_send();
 }
 
-// Send dict only if config exists
-static void check_config_send_dict(int msg) {
-    if(persist_read_bool(CONFIG)) {
-        send_dict(msg);
-        first_launch = false;
-    } else {
-        display_alert("No config");
-    }
-}
-
 // Run this function at every tick of the clock, i.e. second or minute
 static void handle_tick(struct tm *tick_time, TimeUnits units){
-    check_config_send_dict(first_launch ? ON_LAUNCH : ON_TICK);
+    send_dict(first_launch ? ON_LAUNCH : ON_TICK);
+    first_launch = false;
 }
 
 // Convenience function to create a text layer
@@ -398,15 +384,6 @@ static void init(void) {
     const bool animated = true;
     window_stack_push(window, animated);
 
-    // persist_delete(CONFIG);
-
-    // Subscribe to ticker
-    first_launch = true;
-    tick_timer_service_subscribe(MINUTE_UNIT, handle_tick);
-
-    // Subscribe to accelerometer
-    accel_tap_service_subscribe(tap_handler);
-
     // Register callbacks
     app_message_register_inbox_received(inbox_received_callback);
     app_message_register_inbox_dropped(inbox_dropped_callback);
@@ -414,6 +391,13 @@ static void init(void) {
     app_message_register_outbox_sent(outbox_sent_callback);
     // Open sesame
     app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+
+    // Subscribe to ticker
+    first_launch = true;
+    tick_timer_service_subscribe(MINUTE_UNIT, handle_tick);
+
+    // Subscribe to accelerometer
+    accel_tap_service_subscribe(tap_handler);
 }
 
 static void deinit(void) {
