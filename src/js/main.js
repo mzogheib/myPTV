@@ -47,10 +47,9 @@ function callPTVAPI(finalURL, callback) {
     }
 
     xhr.ontimeout = function () {
-        var dictionary = {
+        sendDict({
             "KEY_ALERT": "URL Timeout"
-        };
-        sendDict(dictionary);
+        });
     }
 
     xhr.send();
@@ -84,10 +83,9 @@ function healthCheckCallback(data) {
         // Carry on with getting PTV data
         getLocationAndDepartures();
     } else {
-        var dictionary = {
+        sendDict({
             "KEY_ALERT": "PTV Unhealthy"
-        };
-        sendDict(dictionary);
+        });
     }
 }
 
@@ -147,16 +145,15 @@ function specificNextDeparturesCallback(data) {
         departureTime2 = departureTime2.getTime()/1000;
         departureTime3 = departureTime3.getTime()/1000;
 
-        // Add to a dictionary for the watch
-        var dictionary = {};
-        dictionary["KEY_ROUTE_SHORT"] = routeShortName;
-        dictionary["KEY_ROUTE_LONG"] = routeLongName;
-        dictionary["KEY_STOP"] = stopName;
-        dictionary["KEY_DEPARTURE_1"] = departureTime1;
-        dictionary["KEY_DEPARTURE_2"] = departureTime2;
-        dictionary["KEY_DEPARTURE_3"] = departureTime3;
-
-        sendDict(dictionary);
+        // Send to watch
+        sendDict({
+            "KEY_ROUTE_SHORT": routeShortName,
+            "KEY_ROUTE_LONG": routeLongName,
+            "KEY_STOP": stopName,
+            "KEY_DEPARTURE_1": departureTime1,
+            "KEY_DEPARTURE_2": departureTime2,
+            "KEY_DEPARTURE_3": departureTime3
+        });
     }
 }
 
@@ -224,10 +221,9 @@ function departuresAtNearestStop(pos) {
 
 // If cannot get location then don't send anything back.
 function locationError(err) {
-    var dictionary = {
+    sendDict({
         "KEY_ALERT": "Location error"
-    };
-    sendDict(dictionary);
+    });
 }
 
 var locationOptions = {
@@ -336,10 +332,9 @@ Pebble.addEventListener('appmessage', function (e) {
                 break;
         }
     } else {
-        var dictionary = {
+        sendDict({
             "KEY_ALERT": "No config"
-        };
-        sendDict(dictionary);
+        });
     }
 });
 
