@@ -106,11 +106,10 @@ function specificNextDeparturesCallback(data) {
         }
 
         stopIndex += 1 * stopIndexIncrement;
-        var d = localStorage['direction'];
         specificNextDepartures(localConfig.modeID,
             localConfig.routeID,
             localConfig.allStops[stopIndex].stopID,
-            localConfig.directionID[d],
+            localConfig.directionID[0],
             localConfig.limit
         );
     } else {
@@ -209,12 +208,11 @@ function departuresAtNearestStop(pos) {
 
     // Get departures for the nearest stop
     stopIndex = 0;
-    var d = localStorage['direction'];
     specificNextDepartures(
         localConfig.modeID,
         localConfig.routeID,
         localConfig.allStops[stopIndex].stopID,
-        localConfig.directionID[d],
+        localConfig.directionID[0],
         localConfig.limit
     );
 }
@@ -259,21 +257,23 @@ Pebble.addEventListener('appmessage', function (e) {
                 break;
             case ON_TICK:
                 console.log("ON_TICK: Update departures at current stop");
-                var d = localStorage['direction'];
                 specificNextDepartures(
                     localConfig.modeID,
                     localConfig.routeID,
                     localConfig.allStops[stopIndex].stopID,
-                    localConfig.directionID[d],
+                    localConfig.directionID[0],
                     localConfig.limit
                 );
                 break;
             case ON_UP_SINGLE:
                 console.log("ON_UP_SINGLE: Get departures in next direction at nearest stop");
-                var numDirections = localStorage['numDirections'];
-                var d = localStorage['direction'];
-                d = (numDirections - 1) - d;
-                localStorage.setItem('direction', d);
+                // Assume there will only ever be a max of 2 directions
+                if(localConfig.directionID.length > 1) {
+                    var dirTemp = localConfig.directionID[0];
+                    localConfig.directionID[0] = localConfig.directionID[1];
+                    localConfig.directionID[1] = dirTemp;
+                }
+
                 stopIndexIncrement = 1;
 
                 getLocationAndDepartures();
@@ -285,12 +285,11 @@ Pebble.addEventListener('appmessage', function (e) {
                 }
                 stopIndexIncrement = 1;
 
-                var d = localStorage['direction'];
                 specificNextDepartures(
                     localConfig.modeID,
                     localConfig.routeID,
                     localConfig.allStops[stopIndex].stopID,
-                    localConfig.directionID[d],
+                    localConfig.directionID[0],
                     localConfig.limit
                 );
                 break;
@@ -301,12 +300,11 @@ Pebble.addEventListener('appmessage', function (e) {
                 }
                 stopIndexIncrement = -1;
 
-                var d = localStorage['direction'];
                 specificNextDepartures(
                     localConfig.modeID,
                     localConfig.routeID,
                     localConfig.allStops[stopIndex].stopID,
-                    localConfig.directionID[d],
+                    localConfig.directionID[0],
                     localConfig.limit
                 );
                 break;
@@ -317,12 +315,11 @@ Pebble.addEventListener('appmessage', function (e) {
                 break;
             case ON_DOWN_SINGLE:
                 console.log("ON_DOWN_SINGLE: Update departures at current stop");
-                var d = localStorage['direction'];
                 specificNextDepartures(
                     localConfig.modeID,
                     localConfig.routeID,
                     localConfig.allStops[stopIndex].stopID,
-                    localConfig.directionID[d],
+                    localConfig.directionID[0],
                     localConfig.limit
                 );
                 break;
@@ -364,10 +361,6 @@ Pebble.addEventListener('webviewclosed', function(e) {
 
         // Then, parse the string into an object
         localConfig = JSON.parse(configString);
-
-        // Also save the total number of directions to toggle. Start off with 0
-        localStorage.setItem('numDirections', localConfig.directionID.length);
-        localStorage.setItem('direction', 0);
 
         // Get and send the PTV data
         console.log("ON_NEW_CONFIG: Get departures at nearest stop");
