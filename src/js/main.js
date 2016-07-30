@@ -106,12 +106,7 @@ function specificNextDeparturesCallback(data) {
         }
 
         stopIndex += 1 * stopIndexIncrement;
-        specificNextDepartures(localConfig.modeID,
-            localConfig.routeID,
-            localConfig.allStops[stopIndex].stopID,
-            localConfig.directionID[0],
-            localConfig.limit
-        );
+        specificNextDepartures(localConfig);
     } else {
         // Found departures. Send to watch.
         var routeShortName, routeLongName;
@@ -156,7 +151,12 @@ function specificNextDeparturesCallback(data) {
     }
 }
 
-function specificNextDepartures(mode, line, stop, direction, limit) {
+function specificNextDepartures(config) {
+    var mode = config.modeID;
+    var line = config.routeID;
+    var stop = config.allStops[stopIndex].stopID;
+    var direction = config.directionID[0];
+    var limit = config.limit;
     var params = '/mode/' + mode + '/line/' + line + '/stop/' + stop + '/directionid/' + direction + '/departures/all/limit/' + limit + '?';
     var finalURL = getURLWithSignature(params, devID, key);
     callPTVAPI(finalURL, specificNextDeparturesCallback);
@@ -208,13 +208,7 @@ function departuresAtNearestStop(pos) {
 
     // Get departures for the nearest stop
     stopIndex = 0;
-    specificNextDepartures(
-        localConfig.modeID,
-        localConfig.routeID,
-        localConfig.allStops[stopIndex].stopID,
-        localConfig.directionID[0],
-        localConfig.limit
-    );
+    specificNextDepartures(localConfig);
 }
 
 // If cannot get location then don't send anything back.
@@ -257,13 +251,7 @@ Pebble.addEventListener('appmessage', function (e) {
                 break;
             case ON_TICK:
                 console.log("ON_TICK: Update departures at current stop");
-                specificNextDepartures(
-                    localConfig.modeID,
-                    localConfig.routeID,
-                    localConfig.allStops[stopIndex].stopID,
-                    localConfig.directionID[0],
-                    localConfig.limit
-                );
+                specificNextDepartures(localConfig);
                 break;
             case ON_UP_SINGLE:
                 console.log("ON_UP_SINGLE: Get departures in next direction at nearest stop");
@@ -285,13 +273,7 @@ Pebble.addEventListener('appmessage', function (e) {
                 }
                 stopIndexIncrement = 1;
 
-                specificNextDepartures(
-                    localConfig.modeID,
-                    localConfig.routeID,
-                    localConfig.allStops[stopIndex].stopID,
-                    localConfig.directionID[0],
-                    localConfig.limit
-                );
+                specificNextDepartures(localConfig);
                 break;
             case ON_SELECT_DOUBLE:
                 console.log("ON_SELECT_DOUBLE: Get departures at previous stop");
@@ -300,13 +282,7 @@ Pebble.addEventListener('appmessage', function (e) {
                 }
                 stopIndexIncrement = -1;
 
-                specificNextDepartures(
-                    localConfig.modeID,
-                    localConfig.routeID,
-                    localConfig.allStops[stopIndex].stopID,
-                    localConfig.directionID[0],
-                    localConfig.limit
-                );
+                specificNextDepartures(localConfig);
                 break;
             case ON_SELECT_LONG:
                 console.log("ON_SELECT_LONG: Get departures at nearest stop");
@@ -315,13 +291,7 @@ Pebble.addEventListener('appmessage', function (e) {
                 break;
             case ON_DOWN_SINGLE:
                 console.log("ON_DOWN_SINGLE: Update departures at current stop");
-                specificNextDepartures(
-                    localConfig.modeID,
-                    localConfig.routeID,
-                    localConfig.allStops[stopIndex].stopID,
-                    localConfig.directionID[0],
-                    localConfig.limit
-                );
+                specificNextDepartures(localConfig);
                 break;
             case ON_TAP:
                 console.log("ON_TAP: Get departures at nearest stop");
