@@ -7,6 +7,7 @@ var gutil = require('gulp-util');
 var merge = require('merge-stream');
 var runSequence = require('run-sequence');
 var watch = require('gulp-watch');
+var webserver = require('gulp-webserver');
 
 var paths = {
     dest: {
@@ -42,12 +43,14 @@ var paths = {
 /**
  * Main Tasks
  */
-gulp.task('default', ['build', 'watch']);
+gulp.task('default', false, function (cb) {
+    runSequence('build', 'watch', 'webserver', cb);
+});
 
 /**
  * Watch task
  */
-gulp.task('watch', ['build'], function () {
+gulp.task('watch', false, function () {
     watch(paths.appFiles.js, function () {
         gulp.start('concatJS');
     });
@@ -71,7 +74,9 @@ gulp.task('clean', false, function () {
     return del([paths.dest.html]);
 });
 
-// Concat the JS files to dist
+/**
+ * Concat the JS files to dist
+ */
 gulp.task('concatJS', false, function () {
     var app = gulp.src(paths.appFiles.js);
     var vendor = gulp.src(paths.vendorFiles.js);
@@ -96,6 +101,14 @@ gulp.task('copy', false, function () {
 
 
     return merge(html, css, fonts);
+});
+
+/**
+ * Spin up a web server
+ */
+gulp.task('webserver', function() {
+  gulp.src(paths.dest.root)
+    .pipe(webserver());
 });
 
 /**
